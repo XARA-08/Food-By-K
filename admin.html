@@ -1,0 +1,1940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Food By K — Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ─── DESIGN SYSTEM ─── */
+:root {
+  --bg:       #0A0A0A;
+  --surface:  #111111;
+  --surface2: #181818;
+  --surface3: #202020;
+  --border:   #2A2A2A;
+  --border2:  #333333;
+  --ember:    #D94F00;
+  --ember2:   #FF6B1A;
+  --ember3:   rgba(217,79,0,0.12);
+  --gold:     #C9A84C;
+  --green:    #2ECC71;
+  --red:      #E74C3C;
+  --yellow:   #F1C40F;
+  --text:     #F0EDE8;
+  --text2:    #A09890;
+  --text3:    #605850;
+  --mono:     'Space Mono', monospace;
+  --sans:     'Syne', sans-serif;
+  --r:        10px;
+  --r2:       14px;
+}
+
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  height: 100%;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+button, input, select, textarea {
+  font-family: var(--sans);
+  border: none;
+  outline: none;
+  background: none;
+  color: inherit;
+}
+
+/* ─── LOGIN SCREEN ─── */
+#login-screen {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+  background-image: repeating-linear-gradient(
+    0deg, transparent, transparent 39px, var(--border) 39px, var(--border) 40px
+  ), repeating-linear-gradient(
+    90deg, transparent, transparent 39px, var(--border) 39px, var(--border) 40px
+  );
+}
+
+.login-card {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 48px;
+  width: 100%;
+  max-width: 400px;
+  position: relative;
+  z-index: 1;
+}
+
+.login-logo {
+  width: 48px; height: 48px;
+  background: var(--ember3);
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 24px;
+  border: 1px solid var(--ember);
+}
+
+.login-logo svg { width: 28px; height: 28px; fill: var(--ember2); }
+
+.login-card h1 {
+  font-size: 26px; font-weight: 800;
+  margin-bottom: 4px;
+  letter-spacing: -0.5px;
+}
+
+.login-sub {
+  font-size: 13px; color: var(--text3);
+  font-family: var(--mono);
+  margin-bottom: 32px;
+}
+
+.login-label {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text3); margin-bottom: 8px; display: block;
+}
+
+.login-input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  padding: 14px 16px;
+  font-size: 15px;
+  color: var(--text);
+  transition: border-color 0.2s;
+  margin-bottom: 20px;
+  letter-spacing: 3px;
+}
+
+.login-input:focus { border-color: var(--ember); }
+
+.login-btn {
+  width: 100%;
+  background: var(--ember);
+  color: white;
+  padding: 15px;
+  border-radius: var(--r);
+  font-size: 13px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.login-btn:hover { background: var(--ember2); }
+.login-btn:active { transform: scale(0.98); }
+
+.login-err {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--red);
+  font-family: var(--mono);
+  display: none;
+}
+
+/* ─── APP SHELL ─── */
+#app {
+  display: none;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  grid-template-rows: 56px 1fr;
+  height: 100vh;
+}
+
+/* ─── TOPBAR ─── */
+.topbar {
+  grid-column: 1 / -1;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 20px;
+  gap: 16px;
+  z-index: 10;
+}
+
+.topbar-brand {
+  display: flex; align-items: center; gap: 10px;
+  flex: 1;
+}
+
+.topbar-icon {
+  width: 30px; height: 30px;
+  background: var(--ember3);
+  border-radius: 8px;
+  border: 1px solid var(--ember);
+  display: flex; align-items: center; justify-content: center;
+}
+
+.topbar-icon svg { width: 18px; height: 18px; fill: var(--ember2); }
+
+.topbar-name {
+  font-size: 14px; font-weight: 800;
+  letter-spacing: 3px; text-transform: uppercase;
+}
+
+.topbar-badge {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ember2);
+  letter-spacing: 1px;
+}
+
+.topbar-right {
+  display: flex; align-items: center; gap: 12px;
+}
+
+.topbar-page-title {
+  font-size: 13px; color: var(--text3);
+  font-family: var(--mono);
+  font-weight: 400;
+}
+
+.topbar-logout {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  cursor: pointer;
+  color: var(--text2);
+  transition: all 0.2s;
+}
+
+.topbar-logout:hover { border-color: var(--red); color: var(--red); }
+
+/* ─── SIDEBAR ─── */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 16px 12px;
+  overflow-y: auto;
+  display: flex; flex-direction: column; gap: 4px;
+}
+
+.sidebar-section {
+  font-family: var(--mono);
+  font-size: 9px; letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text3);
+  padding: 16px 12px 6px;
+}
+
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  font-size: 14px; font-weight: 600;
+  color: var(--text2);
+}
+
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+
+.nav-item.active {
+  background: var(--ember3);
+  color: var(--ember2);
+  border: 1px solid rgba(217,79,0,0.25);
+}
+
+.nav-item.active::before {
+  content: '';
+  position: absolute; left: 0; top: 20%; height: 60%;
+  width: 3px; border-radius: 0 3px 3px 0;
+  background: var(--ember);
+}
+
+.nav-icon { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.7; }
+.nav-item.active .nav-icon { opacity: 1; }
+
+.nav-badge {
+  margin-left: auto;
+  background: var(--ember);
+  color: white;
+  font-size: 10px; font-weight: 700;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono);
+}
+
+/* ─── MAIN CONTENT ─── */
+.main {
+  overflow-y: auto;
+  padding: 28px;
+  display: flex; flex-direction: column; gap: 24px;
+}
+
+.section { display: none; flex-direction: column; gap: 20px; }
+.section.active { display: flex; animation: fadeIn 0.25s ease; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ─── SECTION HEADER ─── */
+.sec-header {
+  display: flex; align-items: flex-end;
+  justify-content: space-between;
+}
+
+.sec-title { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+.sec-subtitle { font-size: 13px; color: var(--text3); font-family: var(--mono); margin-top: 3px; }
+
+.btn-primary {
+  background: var(--ember);
+  color: white;
+  padding: 11px 20px;
+  border-radius: var(--r);
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex; align-items: center; gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-primary:hover { background: var(--ember2); }
+.btn-primary:active { transform: scale(0.97); }
+
+.btn-secondary {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  padding: 10px 18px;
+  border-radius: var(--r);
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex; align-items: center; gap: 7px;
+}
+
+.btn-secondary:hover { border-color: var(--text3); color: var(--text); }
+
+.btn-danger {
+  background: rgba(231,76,60,0.1);
+  border: 1px solid rgba(231,76,60,0.3);
+  color: var(--red);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-danger:hover { background: rgba(231,76,60,0.2); }
+
+.btn-edit {
+  background: rgba(201,168,76,0.1);
+  border: 1px solid rgba(201,168,76,0.3);
+  color: var(--gold);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-edit:hover { background: rgba(201,168,76,0.2); }
+
+/* ─── CARDS ─── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 20px;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
+
+/* ─── FORM STYLES ─── */
+.field-label {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text3); margin-bottom: 7px; display: block;
+}
+
+.field-input, .field-select, .field-textarea {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  padding: 11px 14px;
+  font-size: 14px;
+  color: var(--text);
+  transition: border-color 0.2s;
+}
+
+.field-input:focus, .field-select:focus, .field-textarea:focus {
+  border-color: var(--ember);
+}
+
+.field-select option { background: var(--surface2); }
+
+.field-textarea { resize: vertical; min-height: 80px; }
+
+.field-group { margin-bottom: 16px; }
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.form-row-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
+}
+
+/* ─── TOGGLE ─── */
+.toggle-wrap {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.toggle-wrap:hover { border-color: var(--border2); }
+
+.toggle {
+  position: relative;
+  width: 40px; height: 22px; flex-shrink: 0;
+}
+
+.toggle input { opacity: 0; width: 0; height: 0; }
+
+.toggle-slider {
+  position: absolute; inset: 0;
+  background: var(--border2);
+  border-radius: 22px;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 16px; height: 16px;
+  left: 3px; top: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.toggle input:checked + .toggle-slider { background: var(--ember); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+.toggle-label { font-size: 13px; font-weight: 600; }
+.toggle-sublabel { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+
+/* ─── MODAL ─── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(4px);
+  z-index: 500;
+  display: none; align-items: center; justify-content: center;
+  padding: 20px;
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 28px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+}
+
+.modal-title {
+  font-size: 20px; font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.modal-sub {
+  font-size: 12px; color: var(--text3);
+  font-family: var(--mono);
+  margin-bottom: 24px;
+}
+
+.modal-actions {
+  display: flex; gap: 10px;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.modal-close {
+  position: absolute; top: 20px; right: 20px;
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text2);
+  font-size: 18px;
+  transition: all 0.15s;
+}
+
+.modal-close:hover { background: var(--surface3); color: var(--text); }
+
+/* ─── TICKET TYPE BUILDER ─── */
+.ticket-type-row {
+  display: grid;
+  grid-template-columns: 1fr 100px 36px;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.ticket-remove {
+  width: 36px; height: 36px;
+  background: rgba(231,76,60,0.1);
+  border: 1px solid rgba(231,76,60,0.25);
+  border-radius: 8px;
+  color: var(--red);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  transition: background 0.15s;
+}
+
+.ticket-remove:hover { background: rgba(231,76,60,0.2); }
+
+.add-ticket-btn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 14px;
+  border: 1px dashed var(--border2);
+  border-radius: var(--r);
+  color: var(--text3);
+  cursor: pointer;
+  font-size: 12px; font-weight: 600;
+  transition: all 0.15s;
+  width: 100%;
+  justify-content: center;
+}
+
+.add-ticket-btn:hover { border-color: var(--ember); color: var(--ember2); }
+
+/* ─── ORDER CARD ─── */
+.order-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.order-card:hover { border-color: var(--border2); }
+
+.order-header {
+  background: linear-gradient(135deg, #1A0A00, #2A1000);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 18px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+
+.order-name { font-size: 16px; font-weight: 700; }
+.order-phone { font-size: 12px; color: rgba(255,255,255,0.5); font-family: var(--mono); }
+.order-total { font-size: 22px; font-weight: 800; color: var(--ember2); }
+.order-collect { font-size: 10px; color: var(--text3); letter-spacing: 1.5px; text-transform: uppercase; font-family: var(--mono); }
+
+.order-body { padding: 14px 18px; }
+
+.order-item {
+  display: flex; justify-content: space-between;
+  font-size: 13px; padding: 5px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: var(--text2);
+}
+
+.order-item-name { font-weight: 500; }
+.order-item-price { color: var(--ember2); font-weight: 700; font-family: var(--mono); }
+
+.order-footer {
+  padding: 12px 18px 14px;
+  display: flex; align-items: center; gap: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.order-id {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 1px;
+}
+
+.order-status-badge {
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  font-family: var(--mono);
+}
+
+.status-confirmed { background: rgba(46,204,113,0.1); color: var(--green); border: 1px solid rgba(46,204,113,0.25); }
+.status-collected { background: rgba(255,255,255,0.05); color: var(--text3); border: 1px solid var(--border); }
+
+.order-notes {
+  margin: 8px 0;
+  padding: 8px 12px;
+  background: rgba(217,79,0,0.07);
+  border-radius: 8px;
+  font-size: 12px; color: var(--text3); font-style: italic;
+}
+
+/* ─── MENU ITEM CARD ─── */
+.menu-item-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 88px 1fr;
+}
+
+.menu-item-img {
+  width: 88px; height: 88px;
+  object-fit: cover;
+  background: var(--surface2);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text3);
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.menu-item-img img { width: 100%; height: 100%; object-fit: cover; }
+
+.menu-item-body { padding: 12px 14px; }
+.menu-item-name { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+.menu-item-desc { font-size: 12px; color: var(--text3); margin-bottom: 8px; line-height: 1.4; }
+
+.menu-item-footer {
+  display: flex; align-items: center; gap: 8px;
+}
+
+.menu-item-price {
+  font-size: 16px; font-weight: 800;
+  color: var(--ember2);
+  font-family: var(--mono);
+  margin-right: auto;
+}
+
+.menu-item-cat {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: var(--text3);
+}
+
+.soldout-badge {
+  background: rgba(231,76,60,0.1);
+  border: 1px solid rgba(231,76,60,0.3);
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: var(--red);
+}
+
+/* ─── EVENT CARD ─── */
+.event-card-admin {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  overflow: hidden;
+}
+
+.event-card-img {
+  width: 100%; height: 140px;
+  object-fit: cover;
+  background: linear-gradient(135deg, var(--surface2), var(--surface3));
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text3);
+  font-size: 32px;
+}
+
+.event-card-img img { width: 100%; height: 100%; object-fit: cover; }
+
+.event-card-body { padding: 14px 16px; }
+.event-card-name { font-size: 17px; font-weight: 800; margin-bottom: 3px; }
+.event-card-sub { font-size: 12px; color: var(--text3); margin-bottom: 10px; font-family: var(--mono); }
+
+.event-card-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+
+.meta-pill {
+  display: flex; align-items: center; gap: 5px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px; color: var(--text2);
+}
+
+.event-type-badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  font-family: var(--mono);
+}
+
+.type-special { background: rgba(217,79,0,0.15); color: var(--ember2); border: 1px solid rgba(217,79,0,0.3); }
+.type-recurring { background: rgba(201,168,76,0.1); color: var(--gold); border: 1px solid rgba(201,168,76,0.25); }
+
+.event-ticket-row {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  margin-bottom: 14px;
+}
+
+.event-ticket-pill {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.event-ticket-pill span { color: var(--text3); }
+.event-ticket-pill strong { color: var(--ember2); font-family: var(--mono); }
+
+.event-card-footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  display: flex; gap: 8px; align-items: center;
+}
+
+/* ─── STATS ROW ─── */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 18px 20px;
+}
+
+.stat-label {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text3); margin-bottom: 8px;
+  font-family: var(--mono);
+}
+
+.stat-value {
+  font-size: 28px; font-weight: 800;
+  letter-spacing: -1px;
+}
+
+.stat-sub {
+  font-size: 12px; color: var(--text3);
+  margin-top: 3px; font-family: var(--mono);
+}
+
+/* ─── TRADING HOURS ─── */
+.hours-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  margin-bottom: 8px;
+}
+
+.hours-day {
+  width: 90px;
+  font-size: 13px; font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-family: var(--mono);
+}
+
+.hours-time-group {
+  display: flex; align-items: center; gap: 8px;
+  flex: 1;
+}
+
+.hours-input {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--text);
+  width: 100px;
+  transition: border-color 0.2s;
+}
+
+.hours-input:focus { border-color: var(--ember); }
+.hours-input:disabled { opacity: 0.3; }
+
+.hours-sep { font-size: 12px; color: var(--text3); font-family: var(--mono); }
+
+.closed-toggle {
+  display: flex; align-items: center; gap: 8px;
+  margin-left: auto;
+}
+
+/* ─── ANNOUNCEMENT BANNER ─── */
+.announcement-preview {
+  background: var(--ember3);
+  border: 1px solid rgba(217,79,0,0.3);
+  border-radius: var(--r);
+  padding: 14px 20px;
+  display: flex; align-items: center; gap: 12px;
+  font-size: 14px; font-weight: 600;
+  color: var(--ember2);
+}
+
+.announcement-preview svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+/* ─── EMPTY STATE ─── */
+.empty-state {
+  padding: 60px 20px;
+  text-align: center;
+  border: 1px dashed var(--border2);
+  border-radius: var(--r2);
+}
+
+.empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.3; }
+.empty-title { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+.empty-sub { font-size: 13px; color: var(--text3); font-family: var(--mono); }
+
+/* ─── TICKET AVAILABILITY ─── */
+.avail-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 18px 20px;
+}
+
+.avail-bar-wrap {
+  background: var(--surface2);
+  border-radius: 6px;
+  height: 8px;
+  overflow: hidden;
+  margin: 10px 0 6px;
+}
+
+.avail-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  background: var(--ember);
+  transition: width 0.3s;
+}
+
+.avail-bar-fill.danger { background: var(--red); }
+.avail-bar-fill.safe { background: var(--green); }
+
+/* ─── TOAST ─── */
+#toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  color: var(--text);
+  padding: 12px 24px;
+  border-radius: 50px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 9999;
+  opacity: 0;
+  transition: all 0.3s;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+#toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast.success { border-color: var(--green); color: var(--green); }
+#toast.error { border-color: var(--red); color: var(--red); }
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* ─── DIVIDER ─── */
+.divider { border: none; border-top: 1px solid var(--border); margin: 4px 0; }
+
+/* ─── MOBILE WARNING ─── */
+@media (max-width: 700px) {
+  .shell { grid-template-columns: 1fr; grid-template-rows: 56px auto 1fr; }
+  .sidebar { display: none; }
+  .stats-row { grid-template-columns: 1fr 1fr; }
+  .form-row, .form-row-3 { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     LOGIN SCREEN
+════════════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8 6 Q16 2 24 6 L26 20 Q20 28 16 28 Q12 28 6 20 Z" opacity="0.3"/>
+        <path d="M16 8 Q22 11 22 17 Q22 23 16 25 Q10 23 10 17 Q10 11 16 8Z"/>
+        <circle cx="16" cy="17" r="3"/>
+      </svg>
+    </div>
+    <h1>Admin Panel</h1>
+    <div class="login-sub">// food-by-k • owner access</div>
+    <label class="login-label">Access Code</label>
+    <input class="login-input" type="password" id="login-pw" placeholder="••••••••••••" autocomplete="current-password">
+    <button class="login-btn" onclick="doLogin()">Unlock Panel</button>
+    <div class="login-err" id="login-err">⚠ Incorrect access code</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     APP
+════════════════════════════════════════════ -->
+<div id="app">
+  <div class="shell">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-brand">
+        <div class="topbar-icon">
+          <svg viewBox="0 0 32 32"><path d="M8 6 Q16 2 24 6 L26 20 Q20 28 16 28 Q12 28 6 20 Z" opacity="0.3"/><path d="M16 8 Q22 11 22 17 Q22 23 16 25 Q10 23 10 17 Q10 11 16 8Z"/><circle cx="16" cy="17" r="3"/></svg>
+        </div>
+        <span class="topbar-name">Food By K</span>
+        <span class="topbar-badge">ADMIN</span>
+      </div>
+      <div class="topbar-right">
+        <span class="topbar-page-title" id="topbar-page-title">// overview</span>
+        <button class="topbar-logout" onclick="doLogout()">Logout</button>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <nav class="sidebar">
+      <div class="sidebar-section">Live</div>
+      <div class="nav-item active" onclick="nav('orders',this)" data-label="orders">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="16" height="14" rx="2"/><path d="M2 7h16M6 3v4M14 3v4M6 11h4M6 14h2"/></svg>
+        Orders
+        <span class="nav-badge" id="orders-badge" style="display:none">0</span>
+      </div>
+
+      <hr class="divider">
+      <div class="sidebar-section">Content</div>
+
+      <div class="nav-item" onclick="nav('events',this)" data-label="events">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="16" height="14" rx="2"/><path d="M2 7h16M6 1v4M14 1v4"/></svg>
+        Events
+      </div>
+
+      <div class="nav-item" onclick="nav('menu',this)" data-label="menu">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h12M4 10h12M4 15h7"/></svg>
+        Menu
+      </div>
+
+      <hr class="divider">
+      <div class="sidebar-section">Settings</div>
+
+      <div class="nav-item" onclick="nav('announcements',this)" data-label="announcements">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h14l1 8H2L3 6z"/><path d="M7 6V4a3 3 0 016 0v2"/></svg>
+        Announcements
+      </div>
+
+      <div class="nav-item" onclick="nav('hours',this)" data-label="trading hours">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="8"/><path d="M10 5v5l3 3"/></svg>
+        Trading Hours
+      </div>
+
+      <div class="nav-item" onclick="nav('tickets',this)" data-label="ticket availability">
+        <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8h16M2 12h16M5 5v10M15 5v10"/></svg>
+        Ticket Availability
+      </div>
+    </nav>
+
+    <!-- MAIN -->
+    <main class="main" id="main-content">
+
+      <!-- ═══ ORDERS ═══ -->
+      <section class="section active" id="sec-orders">
+        <div class="sec-header">
+          <div>
+            <div class="sec-title">Orders</div>
+            <div class="sec-subtitle">// live pending orders · auto-refreshes every 30s</div>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn-secondary" onclick="renderOrders()">↻ Refresh</button>
+            <button class="btn-secondary" onclick="clearCollected()">Clear Collected</button>
+          </div>
+        </div>
+
+        <div class="stats-row" id="order-stats-row">
+          <div class="stat-card"><div class="stat-label">Pending</div><div class="stat-value" id="stat-pending">0</div><div class="stat-sub">awaiting collection</div></div>
+          <div class="stat-card"><div class="stat-label">Collected Today</div><div class="stat-value" id="stat-collected">0</div><div class="stat-sub">completed today</div></div>
+          <div class="stat-card"><div class="stat-label">Today's Revenue</div><div class="stat-value" id="stat-revenue">R0</div><div class="stat-sub">from collected orders</div></div>
+          <div class="stat-card"><div class="stat-label">Avg Order</div><div class="stat-value" id="stat-avg">R0</div><div class="stat-sub">per order today</div></div>
+        </div>
+
+        <div id="orders-container" class="card-grid"></div>
+        <div id="orders-empty" class="empty-state" style="display:none">
+          <div class="empty-icon">📋</div>
+          <div class="empty-title">No pending orders</div>
+          <div class="empty-sub">Orders from the customer app will appear here</div>
+        </div>
+      </section>
+
+      <!-- ═══ EVENTS ═══ -->
+      <section class="section" id="sec-events">
+        <div class="sec-header">
+          <div>
+            <div class="sec-title">Events</div>
+            <div class="sec-subtitle">// manage upcoming & recurring events</div>
+          </div>
+          <button class="btn-primary" onclick="openEventModal()">+ Add Event</button>
+        </div>
+        <div class="card-grid" id="events-grid"></div>
+        <div id="events-empty" class="empty-state" style="display:none">
+          <div class="empty-icon">🎪</div>
+          <div class="empty-title">No events yet</div>
+          <div class="empty-sub">Create your first event to get started</div>
+        </div>
+      </section>
+
+      <!-- ═══ MENU ═══ -->
+      <section class="section" id="sec-menu">
+        <div class="sec-header">
+          <div>
+            <div class="sec-title">Menu</div>
+            <div class="sec-subtitle">// items, pricing & availability</div>
+          </div>
+          <button class="btn-primary" onclick="openMenuModal()">+ Add Item</button>
+        </div>
+
+        <!-- Category tabs -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;" id="menu-cat-tabs"></div>
+        <div class="card-grid" id="menu-grid"></div>
+        <div id="menu-empty" class="empty-state" style="display:none">
+          <div class="empty-icon">🍽️</div>
+          <div class="empty-title">No menu items</div>
+          <div class="empty-sub">Add your first item above</div>
+        </div>
+      </section>
+
+      <!-- ═══ ANNOUNCEMENTS ═══ -->
+      <section class="section" id="sec-announcements">
+        <div class="sec-header">
+          <div>
+            <div class="sec-title">Announcements</div>
+            <div class="sec-subtitle">// homepage banner messages</div>
+          </div>
+        </div>
+
+        <div class="card" style="max-width:640px;">
+          <div class="field-group">
+            <label class="field-label">Banner Active</label>
+            <div class="toggle-wrap" onclick="toggleAnnouncement()">
+              <label class="toggle" onclick="event.stopPropagation()">
+                <input type="checkbox" id="ann-toggle" onchange="saveAnnouncement()">
+                <span class="toggle-slider"></span>
+              </label>
+              <div>
+                <div class="toggle-label">Show announcement banner</div>
+                <div class="toggle-sublabel">Displays at top of home page for all customers</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Banner Message</label>
+            <input class="field-input" id="ann-message" placeholder="e.g. Kitchen closes early today at 4PM ⚡" oninput="saveAnnouncement()">
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Preview</label>
+            <div class="announcement-preview" id="ann-preview">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 2L12 7H18L13 11L15 17L10 13L5 17L7 11L2 7H8Z"/></svg>
+              <span id="ann-preview-text">No message set</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ TRADING HOURS ═══ -->
+      <section class="section" id="sec-hours">
+        <div class="sec-header">
+          <div>
+            <div class="sec-title">Trading Hours</div>
+            <div class="sec-subtitle">// set open & close times per day</div>
+          </div>
+          <button class="btn-primary" onclick="saveHours()">Save Hours</button>
+        </div>
+
+        <div style="max-width:600px;" id="hours-list"></div>
+      </section>
+
+      <!-- ═══ TICKET AVAILABILITY ═══ -->
+      <section class="section" id="sec-tickets">
+        <div class="sec-header">
+          <div>
+            <div class="sec-title">Ticket Availability</div>
+            <div class="sec-subtitle">// set totals, track remaining, manual override</div>
+          </div>
+        </div>
+        <div class="card-grid" id="tickets-grid"></div>
+        <div id="tickets-empty" class="empty-state" style="display:none">
+          <div class="empty-icon">🎟️</div>
+          <div class="empty-title">No events with ticket tracking</div>
+          <div class="empty-sub">Create events with ticket types to manage availability here</div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     EVENT MODAL
+════════════════════════════════════════════ -->
+<div class="modal-overlay" id="event-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('event-modal')">✕</button>
+    <div class="modal-title" id="event-modal-title">Add Event</div>
+    <div class="modal-sub" id="event-modal-sub">// create a new event listing</div>
+
+    <input type="hidden" id="em-id">
+    <div class="form-row">
+      <div class="field-group">
+        <label class="field-label">Event Name</label>
+        <input class="field-input" id="em-name" placeholder="e.g. #Kota Saturdayz">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Subtitle</label>
+        <input class="field-input" id="em-sub" placeholder="e.g. Local Brands Edition">
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="field-group">
+        <label class="field-label">Date / Schedule</label>
+        <input class="field-input" id="em-date" placeholder="e.g. Every Saturday / 2025-08-10">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Time</label>
+        <input class="field-input" id="em-time" placeholder="e.g. 12PM – 11PM">
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Location</label>
+      <input class="field-input" id="em-location" placeholder="e.g. Goshawk St, Lenasia South">
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Description</label>
+      <textarea class="field-textarea" id="em-desc" placeholder="Event description..."></textarea>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Poster Image URL</label>
+      <input class="field-input" id="em-img" placeholder="https://... or leave blank for placeholder">
+    </div>
+
+    <div class="form-row">
+      <div class="field-group">
+        <label class="field-label">Event Type</label>
+        <select class="field-select" id="em-type">
+          <option value="special">⭐ Special (with countdown)</option>
+          <option value="recurring">🔁 Recurring</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Tags (comma separated)</label>
+        <input class="field-input" id="em-tags" placeholder="e.g. Alcohol Sold, Live DJs">
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Ticket Types</label>
+      <div id="em-tickets-list"></div>
+      <button class="add-ticket-btn" onclick="addTicketRow()">+ Add Ticket Type</button>
+    </div>
+
+    <div class="form-row">
+      <div class="field-group">
+        <label class="field-label">Total Tickets Available</label>
+        <input class="field-input" type="number" id="em-total-tickets" placeholder="e.g. 200">
+      </div>
+      <div class="field-group" style="display:flex;align-items:flex-end;">
+        <div class="toggle-wrap" style="width:100%">
+          <label class="toggle">
+            <input type="checkbox" id="em-soldout">
+            <span class="toggle-slider"></span>
+          </label>
+          <div>
+            <div class="toggle-label">Mark as Sold Out</div>
+            <div class="toggle-sublabel">Override availability display</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('event-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveEvent()">Save Event</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MENU ITEM MODAL
+════════════════════════════════════════════ -->
+<div class="modal-overlay" id="menu-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('menu-modal')">✕</button>
+    <div class="modal-title" id="menu-modal-title">Add Menu Item</div>
+    <div class="modal-sub">// add or edit a menu item</div>
+
+    <input type="hidden" id="mm-id">
+    <div class="form-row">
+      <div class="field-group">
+        <label class="field-label">Item Name</label>
+        <input class="field-input" id="mm-name" placeholder="e.g. Kay's Special Kota">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Category</label>
+        <select class="field-select" id="mm-category">
+          <option value="kota">Kota</option>
+          <option value="sandwiches">Sandwiches</option>
+          <option value="burgers">Burgers</option>
+          <option value="platters">Platters</option>
+          <option value="wraps">Wraps & Fries</option>
+          <option value="specialty">Specialty</option>
+          <option value="drinks">Drinks</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Description</label>
+      <textarea class="field-textarea" id="mm-desc" placeholder="What makes this item special..."></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="field-group">
+        <label class="field-label">Price (ZAR)</label>
+        <input class="field-input" type="number" id="mm-price" placeholder="e.g. 45">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Photo URL</label>
+        <input class="field-input" id="mm-img" placeholder="https://... or emoji placeholder">
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Emoji Placeholder (if no photo URL)</label>
+      <input class="field-input" id="mm-emoji" placeholder="e.g. 🌯" maxlength="4">
+    </div>
+
+    <!-- Crop/preview area -->
+    <div id="mm-img-preview" style="display:none; margin-bottom:16px;">
+      <label class="field-label">Image Preview</label>
+      <div style="position:relative; width:100%; height:160px; overflow:hidden; border-radius:10px; border:1px solid var(--border2); background:var(--surface2);">
+        <img id="mm-img-preview-img" style="width:100%;height:100%;object-fit:cover;cursor:move;" draggable="false" alt="">
+        <div style="position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,0.7);border-radius:6px;padding:4px 10px;font-size:10px;color:var(--text2);">Drag to reposition</div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="toggle-wrap">
+        <label class="toggle">
+          <input type="checkbox" id="mm-soldout">
+          <span class="toggle-slider"></span>
+        </label>
+        <div>
+          <div class="toggle-label">Sold Out Today</div>
+          <div class="toggle-sublabel">Hides item from customer menu</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('menu-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveMenuItem()">Save Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// DATA LAYER — localStorage persistence
+// ═══════════════════════════════════════════
+
+const DB = {
+  get: k => { try { return JSON.parse(localStorage.getItem('fbk_admin_'+k)||'null'); } catch(e){ return null; } },
+  set: (k,v) => localStorage.setItem('fbk_admin_'+k, JSON.stringify(v)),
+};
+
+function getOrders() { return JSON.parse(localStorage.getItem('fbk_orders')||'[]'); }
+function setOrders(o) { localStorage.setItem('fbk_orders', JSON.stringify(o)); }
+
+function getEvents() { return DB.get('events') || getDefaultEvents(); }
+function getMenu()   { return DB.get('menu')   || getDefaultMenu(); }
+function getHours()  { return DB.get('hours')  || getDefaultHours(); }
+function getAnn()    { return DB.get('ann')    || { active: false, message: '' }; }
+
+// ─── DEFAULT DATA ───
+function getDefaultEvents() {
+  return [
+    { id: 'ev-1', name: '#Kota Saturdayz', sub: 'Local Brands Edition', date: 'Every Saturday', time: '12PM – 11PM',
+      location: 'Goshawk St, Lenasia South', desc: 'Food · Clothes · Tattoo · Cocktails · Hookah',
+      type: 'special', img: '', tags: 'Alcohol Sold,Hookah Bar,Live DJs,All Welcome',
+      tickets: [{label:'Presold',price:40},{label:'At Gate',price:50},{label:'Clothing',price:150},{label:'Hubbly',price:150}],
+      totalTickets: 200, soldTickets: 172, soldOut: false },
+    { id: 'ev-2', name: 'LWADS', sub: 'Ladies Wine & Dine Sundays', date: 'Select Sundays', time: '12PM – 8PM',
+      location: '', desc: 'Soul music, wine, cocktails & good vibes',
+      type: 'recurring', img: '', tags: 'Wine & Cocktails,Soul Music,DJ Tebza,Ladies Lead',
+      tickets: [{label:'Ladies',price:20},{label:'Gents',price:50},{label:'Coolerbox',price:20},{label:'Hubbly',price:0}],
+      totalTickets: 100, soldTickets: 0, soldOut: false },
+  ];
+}
+
+function getDefaultMenu() {
+  return [
+    { id: 'mi-1', name: 'Regular Kota', cat: 'kota', desc: 'Classic township kota loaded to perfection', price: 35, emoji: '🍔', img: '', soldOut: false },
+    { id: 'mi-2', name: "Kay's Special", cat: 'kota', desc: 'The signature — steak, cheese & all the extras', price: 55, emoji: '⭐', img: '', soldOut: false },
+    { id: 'mi-3', name: 'Steak Sandwich', cat: 'sandwiches', desc: 'Tender steak on toasted bread', price: 50, emoji: '🥪', img: '', soldOut: false },
+    { id: 'mi-4', name: 'Loaded Fries', cat: 'wraps', desc: 'Fries topped with cheese sauce & chillies', price: 40, emoji: '🍟', img: '', soldOut: false },
+    { id: 'mi-5', name: 'Coke', cat: 'drinks', desc: '330ml', price: 20, emoji: '🥤', img: '', soldOut: false },
+  ];
+}
+
+function getDefaultHours() {
+  const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  return days.map((d,i) => ({ day: d, open: '11:00', close: '18:00', closed: i === 6 }));
+}
+
+// ═══════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════
+
+const PASS = 'FoodByK2025';
+
+function doLogin() {
+  const pw = document.getElementById('login-pw').value;
+  if (pw === PASS) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    initApp();
+  } else {
+    const err = document.getElementById('login-err');
+    err.style.display = 'block';
+    document.getElementById('login-pw').style.borderColor = 'var(--red)';
+    setTimeout(() => { err.style.display='none'; document.getElementById('login-pw').style.borderColor=''; }, 3000);
+  }
+}
+
+function doLogout() {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('login-pw').value = '';
+}
+
+document.getElementById('login-pw').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+// ═══════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════
+
+function nav(id, el) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('sec-'+id).classList.add('active');
+  document.getElementById('topbar-page-title').textContent = '// ' + (el.dataset.label || id);
+  if (id === 'orders') renderOrders();
+  if (id === 'events') renderEvents();
+  if (id === 'menu')   renderMenu();
+  if (id === 'announcements') renderAnnouncement();
+  if (id === 'hours')  renderHours();
+  if (id === 'tickets') renderTickets();
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+
+function initApp() {
+  renderOrders();
+  renderAnnouncement();
+  setInterval(renderOrders, 30000);
+}
+
+// ═══════════════════════════════════════════
+// ORDERS
+// ═══════════════════════════════════════════
+
+function renderOrders() {
+  const orders = getOrders();
+  const today = new Date().toLocaleDateString('en-ZA', {day:'2-digit',month:'short',year:'numeric'});
+
+  const pending   = orders.filter(o => o.status !== 'collected');
+  const collected = orders.filter(o => o.status === 'collected' && o.orderedAt && o.orderedAt.includes(today));
+  const revenue   = collected.reduce((s,o) => s + (o.total||0), 0);
+  const avg       = collected.length ? Math.round(revenue / collected.length) : 0;
+
+  document.getElementById('stat-pending').textContent   = pending.length;
+  document.getElementById('stat-collected').textContent = collected.length;
+  document.getElementById('stat-revenue').textContent   = 'R'+revenue;
+  document.getElementById('stat-avg').textContent       = 'R'+avg;
+
+  const badge = document.getElementById('orders-badge');
+  if (pending.length > 0) { badge.textContent = pending.length; badge.style.display='flex'; }
+  else badge.style.display = 'none';
+
+  const container = document.getElementById('orders-container');
+  const empty     = document.getElementById('orders-empty');
+
+  if (pending.length === 0) {
+    container.style.display = 'none';
+    empty.style.display     = 'block';
+    return;
+  }
+
+  container.style.display = 'grid';
+  empty.style.display     = 'none';
+
+  container.innerHTML = pending.map(order => `
+    <div class="order-card">
+      <div class="order-header">
+        <div>
+          <div class="order-name">${sanitize(order.name)}</div>
+          <div class="order-phone">${sanitize(order.phone)}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="order-total">R${order.total}</div>
+          <div class="order-collect">COLLECT ${sanitize(order.collectAt||'')}</div>
+        </div>
+      </div>
+      <div class="order-body">
+        ${order.items.map(item => `
+          <div class="order-item">
+            <span class="order-item-name">${sanitize(item.name)} <span style="color:var(--text3)">×${item.qty}</span></span>
+            <span class="order-item-price">R${item.price*item.qty}</span>
+          </div>`).join('')}
+        ${order.instructions ? `<div class="order-notes">"${sanitize(order.instructions)}"</div>` : ''}
+      </div>
+      <div class="order-footer">
+        <div class="order-id">${sanitize(order.id)}</div>
+        <div class="order-status-badge status-confirmed">Pending</div>
+        <button class="btn-primary" style="padding:8px 16px;font-size:11px;" onclick="markCollected('${order.id}')">✓ Collected</button>
+      </div>
+    </div>`).join('');
+}
+
+function markCollected(id) {
+  const orders = getOrders();
+  const i = orders.findIndex(o => o.id === id);
+  if (i >= 0) { orders[i].status = 'collected'; setOrders(orders); renderOrders(); toast('Order marked as collected ✓', 'success'); }
+}
+
+function clearCollected() {
+  const orders = getOrders().filter(o => o.status !== 'collected');
+  setOrders(orders);
+  renderOrders();
+  toast('Collected orders cleared');
+}
+
+// ═══════════════════════════════════════════
+// EVENTS
+// ═══════════════════════════════════════════
+
+function renderEvents() {
+  const events = getEvents();
+  const grid  = document.getElementById('events-grid');
+  const empty = document.getElementById('events-empty');
+
+  if (events.length === 0) { grid.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display = 'none';
+
+  grid.innerHTML = events.map(ev => `
+    <div class="event-card-admin">
+      <div class="event-card-img">
+        ${ev.img ? `<img src="${ev.img}" alt="${sanitize(ev.name)}" onerror="this.style.display='none'">` : '🎪'}
+      </div>
+      <div class="event-card-body">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <span class="event-type-badge ${ev.type==='special'?'type-special':'type-recurring'}">${ev.type==='special'?'⭐ Special':'🔁 Recurring'}</span>
+          ${ev.soldOut ? '<span class="soldout-badge">Sold Out</span>' : ''}
+        </div>
+        <div class="event-card-name">${sanitize(ev.name)}</div>
+        <div class="event-card-sub">${sanitize(ev.sub||'')}</div>
+        <div class="event-card-meta">
+          <div class="meta-pill">📅 ${sanitize(ev.date||'')}</div>
+          <div class="meta-pill">⏰ ${sanitize(ev.time||'')}</div>
+          ${ev.location ? `<div class="meta-pill">📍 ${sanitize(ev.location)}</div>` : ''}
+        </div>
+        <div class="event-ticket-row">
+          ${(ev.tickets||[]).map(t => `<div class="event-ticket-pill"><span>${sanitize(t.label)}: </span><strong>R${t.price===0?'FREE':t.price}</strong></div>`).join('')}
+        </div>
+        ${ev.totalTickets ? `<div style="font-size:12px;color:var(--text3);font-family:var(--mono);">${ev.totalTickets - (ev.soldTickets||0)} / ${ev.totalTickets} tickets remaining</div>` : ''}
+      </div>
+      <div class="event-card-footer">
+        <button class="btn-edit" onclick="openEventModal('${ev.id}')">✏ Edit</button>
+        <button class="btn-danger" onclick="deleteEvent('${ev.id}')">✕ Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+function openEventModal(id) {
+  const events = getEvents();
+  const ev = id ? events.find(e => e.id === id) : null;
+
+  document.getElementById('event-modal-title').textContent = ev ? 'Edit Event' : 'Add Event';
+  document.getElementById('event-modal-sub').textContent   = ev ? `// editing ${ev.name}` : '// create a new event listing';
+  document.getElementById('em-id').value            = ev ? ev.id : '';
+  document.getElementById('em-name').value          = ev ? ev.name : '';
+  document.getElementById('em-sub').value           = ev ? (ev.sub||'') : '';
+  document.getElementById('em-date').value          = ev ? (ev.date||'') : '';
+  document.getElementById('em-time').value          = ev ? (ev.time||'') : '';
+  document.getElementById('em-location').value      = ev ? (ev.location||'') : '';
+  document.getElementById('em-desc').value          = ev ? (ev.desc||'') : '';
+  document.getElementById('em-img').value           = ev ? (ev.img||'') : '';
+  document.getElementById('em-type').value          = ev ? (ev.type||'special') : 'special';
+  document.getElementById('em-tags').value          = ev ? (ev.tags||'') : '';
+  document.getElementById('em-total-tickets').value = ev ? (ev.totalTickets||'') : '';
+  document.getElementById('em-soldout').checked     = ev ? !!ev.soldOut : false;
+
+  // Build ticket rows
+  const tList = document.getElementById('em-tickets-list');
+  tList.innerHTML = '';
+  const tickets = ev ? (ev.tickets||[]) : [];
+  tickets.forEach(t => addTicketRow(t.label, t.price));
+  if (tickets.length === 0) addTicketRow();
+
+  document.getElementById('event-modal').classList.add('open');
+}
+
+function addTicketRow(label='', price='') {
+  const list = document.getElementById('em-tickets-list');
+  const row  = document.createElement('div');
+  row.className = 'ticket-type-row';
+  row.innerHTML = `
+    <input class="field-input ticket-label-input" placeholder="Label (e.g. Presold)" value="${sanitize(label)}">
+    <input class="field-input ticket-price-input" type="number" placeholder="Price" value="${price}">
+    <button class="ticket-remove" onclick="this.closest('.ticket-type-row').remove()">−</button>`;
+  list.appendChild(row);
+}
+
+function saveEvent() {
+  const id   = document.getElementById('em-id').value;
+  const name = document.getElementById('em-name').value.trim();
+  if (!name) { toast('Event name is required', 'error'); return; }
+
+  const ticketLabels = [...document.querySelectorAll('.ticket-label-input')].map(i => i.value.trim());
+  const ticketPrices = [...document.querySelectorAll('.ticket-price-input')].map(i => parseInt(i.value)||0);
+  const tickets = ticketLabels.map((l,i) => ({ label: l||'Ticket', price: ticketPrices[i] })).filter(t => t.label);
+
+  const ev = {
+    id: id || 'ev-'+Date.now(),
+    name,
+    sub:          document.getElementById('em-sub').value.trim(),
+    date:         document.getElementById('em-date').value.trim(),
+    time:         document.getElementById('em-time').value.trim(),
+    location:     document.getElementById('em-location').value.trim(),
+    desc:         document.getElementById('em-desc').value.trim(),
+    img:          document.getElementById('em-img').value.trim(),
+    type:         document.getElementById('em-type').value,
+    tags:         document.getElementById('em-tags').value.trim(),
+    totalTickets: parseInt(document.getElementById('em-total-tickets').value)||0,
+    soldTickets:  0,
+    soldOut:      document.getElementById('em-soldout').checked,
+    tickets,
+  };
+
+  const events = getEvents();
+  if (id) {
+    const idx = events.findIndex(e => e.id === id);
+    if (idx >= 0) { ev.soldTickets = events[idx].soldTickets||0; events[idx] = ev; }
+  } else {
+    events.unshift(ev);
+  }
+
+  DB.set('events', events);
+  closeModal('event-modal');
+  renderEvents();
+  toast(id ? 'Event updated ✓' : 'Event created ✓', 'success');
+}
+
+function deleteEvent(id) {
+  if (!confirm('Delete this event? This cannot be undone.')) return;
+  const events = getEvents().filter(e => e.id !== id);
+  DB.set('events', events);
+  renderEvents();
+  toast('Event deleted');
+}
+
+// ═══════════════════════════════════════════
+// MENU
+// ═══════════════════════════════════════════
+
+let activeCat = 'all';
+
+function renderMenu() {
+  const items = getMenu();
+  const cats  = ['all', ...new Set(items.map(i => i.cat))];
+
+  // Tabs
+  const tabs = document.getElementById('menu-cat-tabs');
+  tabs.innerHTML = cats.map(c => `
+    <button onclick="filterMenuCat('${c}',this)" style="
+      padding:8px 16px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;
+      letter-spacing:1px;text-transform:uppercase;transition:all 0.15s;
+      background:${activeCat===c?'var(--ember)':'var(--surface2)'};
+      border:1px solid ${activeCat===c?'var(--ember)':'var(--border2)'};
+      color:${activeCat===c?'white':'var(--text3)'};
+    ">${c==='all'?'All':c}</button>`).join('');
+
+  const filtered = activeCat === 'all' ? items : items.filter(i => i.cat === activeCat);
+  const grid  = document.getElementById('menu-grid');
+  const empty = document.getElementById('menu-empty');
+
+  if (filtered.length === 0) { grid.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display = 'none';
+
+  grid.innerHTML = filtered.map(item => `
+    <div class="menu-item-card">
+      <div class="menu-item-img">
+        ${item.img ? `<img src="${item.img}" alt="${sanitize(item.name)}" onerror="this.parentElement.innerHTML='${item.emoji||'🍽️'}'">` : item.emoji||'🍽️'}
+      </div>
+      <div class="menu-item-body">
+        <div class="menu-item-name">${sanitize(item.name)}</div>
+        <div class="menu-item-desc">${sanitize(item.desc||'')}</div>
+        <div class="menu-item-footer">
+          <span class="menu-item-price">R${item.price}</span>
+          <span class="menu-item-cat">${item.cat}</span>
+          ${item.soldOut ? '<span class="soldout-badge">Sold Out</span>' : ''}
+          <button class="btn-edit" onclick="openMenuModal('${item.id}')">✏</button>
+          <button class="btn-danger" onclick="deleteMenuItem('${item.id}')">✕</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function filterMenuCat(cat, btn) {
+  activeCat = cat;
+  renderMenu();
+}
+
+function openMenuModal(id) {
+  const items = getMenu();
+  const item  = id ? items.find(i => i.id === id) : null;
+
+  document.getElementById('menu-modal-title').textContent = item ? 'Edit Menu Item' : 'Add Menu Item';
+  document.getElementById('mm-id').value       = item ? item.id : '';
+  document.getElementById('mm-name').value     = item ? item.name : '';
+  document.getElementById('mm-category').value = item ? item.cat : 'kota';
+  document.getElementById('mm-desc').value     = item ? (item.desc||'') : '';
+  document.getElementById('mm-price').value    = item ? item.price : '';
+  document.getElementById('mm-img').value      = item ? (item.img||'') : '';
+  document.getElementById('mm-emoji').value    = item ? (item.emoji||'🍽️') : '🍽️';
+  document.getElementById('mm-soldout').checked= item ? !!item.soldOut : false;
+
+  updateMenuImgPreview(item?.img||'');
+  document.getElementById('menu-modal').classList.add('open');
+}
+
+document.getElementById('mm-img').addEventListener('input', function() {
+  updateMenuImgPreview(this.value);
+});
+
+function updateMenuImgPreview(url) {
+  const wrap = document.getElementById('mm-img-preview');
+  const img  = document.getElementById('mm-img-preview-img');
+  if (url && url.startsWith('http')) {
+    img.src = url;
+    wrap.style.display = 'block';
+    let isDragging = false, startY = 0, posY = 50;
+    img.style.objectPosition = 'center 50%';
+    img.onmousedown = e => { isDragging = true; startY = e.clientY; e.preventDefault(); };
+    document.onmousemove = e => {
+      if (!isDragging) return;
+      const delta = ((e.clientY - startY) / img.parentElement.offsetHeight) * 100;
+      posY = Math.max(0, Math.min(100, posY - delta));
+      img.style.objectPosition = `center ${posY}%`;
+      startY = e.clientY;
+    };
+    document.onmouseup = () => { isDragging = false; };
+  } else {
+    wrap.style.display = 'none';
+  }
+}
+
+function saveMenuItem() {
+  const id   = document.getElementById('mm-id').value;
+  const name = document.getElementById('mm-name').value.trim();
+  const price= parseInt(document.getElementById('mm-price').value)||0;
+  if (!name) { toast('Item name required', 'error'); return; }
+
+  const item = {
+    id:      id || 'mi-'+Date.now(),
+    name,
+    cat:     document.getElementById('mm-category').value,
+    desc:    document.getElementById('mm-desc').value.trim(),
+    price,
+    img:     document.getElementById('mm-img').value.trim(),
+    emoji:   document.getElementById('mm-emoji').value.trim()||'🍽️',
+    soldOut: document.getElementById('mm-soldout').checked,
+  };
+
+  const items = getMenu();
+  if (id) { const i = items.findIndex(m => m.id === id); if (i>=0) items[i]=item; }
+  else items.unshift(item);
+
+  DB.set('menu', items);
+  closeModal('menu-modal');
+  renderMenu();
+  toast(id ? 'Item updated ✓' : 'Item added ✓', 'success');
+}
+
+function deleteMenuItem(id) {
+  if (!confirm('Remove this menu item?')) return;
+  DB.set('menu', getMenu().filter(i => i.id !== id));
+  renderMenu();
+  toast('Item removed');
+}
+
+// ═══════════════════════════════════════════
+// ANNOUNCEMENTS
+// ═══════════════════════════════════════════
+
+function renderAnnouncement() {
+  const ann = getAnn();
+  document.getElementById('ann-toggle').checked = ann.active;
+  document.getElementById('ann-message').value  = ann.message||'';
+  updateAnnPreview(ann.message||'');
+}
+
+function toggleAnnouncement() {
+  const ann = getAnn();
+  ann.active = !ann.active;
+  document.getElementById('ann-toggle').checked = ann.active;
+  DB.set('ann', ann);
+  toast(ann.active ? 'Banner enabled' : 'Banner disabled');
+}
+
+function saveAnnouncement() {
+  const ann = getAnn();
+  ann.active  = document.getElementById('ann-toggle').checked;
+  ann.message = document.getElementById('ann-message').value;
+  DB.set('ann', ann);
+  updateAnnPreview(ann.message);
+}
+
+function updateAnnPreview(msg) {
+  document.getElementById('ann-preview-text').textContent = msg || 'No message set';
+}
+
+// ═══════════════════════════════════════════
+// TRADING HOURS
+// ═══════════════════════════════════════════
+
+function renderHours() {
+  const hours = getHours();
+  const list  = document.getElementById('hours-list');
+
+  list.innerHTML = hours.map((h, i) => `
+    <div class="hours-row">
+      <div class="hours-day">${h.day}</div>
+      <div class="hours-time-group">
+        <input class="hours-input" type="time" value="${h.open}" id="hour-open-${i}" ${h.closed?'disabled':''}>
+        <span class="hours-sep">→</span>
+        <input class="hours-input" type="time" value="${h.close}" id="hour-close-${i}" ${h.closed?'disabled':''}>
+      </div>
+      <div class="closed-toggle">
+        <label style="font-size:12px;color:var(--text3);font-family:var(--mono);">Closed</label>
+        <label class="toggle">
+          <input type="checkbox" ${h.closed?'checked':''} onchange="toggleDayClosed(${i},this)">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>`).join('');
+}
+
+function toggleDayClosed(i, cb) {
+  const open  = document.getElementById('hour-open-'+i);
+  const close = document.getElementById('hour-close-'+i);
+  open.disabled  = cb.checked;
+  close.disabled = cb.checked;
+}
+
+function saveHours() {
+  const hours = getHours();
+  hours.forEach((h, i) => {
+    h.open   = document.getElementById('hour-open-'+i)?.value  || h.open;
+    h.close  = document.getElementById('hour-close-'+i)?.value || h.close;
+    const cb = document.querySelector(`#hours-list .hours-row:nth-child(${i+1}) input[type=checkbox]`);
+    h.closed = cb ? cb.checked : h.closed;
+  });
+  DB.set('hours', hours);
+  toast('Trading hours saved ✓', 'success');
+}
+
+// ═══════════════════════════════════════════
+// TICKET AVAILABILITY
+// ═══════════════════════════════════════════
+
+function renderTickets() {
+  const events = getEvents().filter(e => e.totalTickets > 0);
+  const grid  = document.getElementById('tickets-grid');
+  const empty = document.getElementById('tickets-empty');
+
+  if (events.length === 0) { grid.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display = 'none';
+
+  grid.innerHTML = events.map(ev => {
+    const remaining = ev.totalTickets - (ev.soldTickets||0);
+    const pct       = Math.round((ev.soldTickets||0) / ev.totalTickets * 100);
+    const fillClass = pct >= 90 ? 'danger' : pct >= 70 ? '' : 'safe';
+    return `
+    <div class="avail-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div>
+          <div style="font-size:16px;font-weight:800;">${sanitize(ev.name)}</div>
+          <div style="font-size:11px;color:var(--text3);font-family:var(--mono);">${sanitize(ev.date||'')}</div>
+        </div>
+        <span class="event-type-badge ${ev.type==='special'?'type-special':'type-recurring'}">${ev.type==='special'?'⭐ Special':'🔁 Recurring'}</span>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">
+        <span style="color:var(--text2)">Sold: <strong style="color:var(--text)">${ev.soldTickets||0}</strong></span>
+        <span style="color:var(--text2)">Remaining: <strong style="color:var(--ember2)">${remaining}</strong></span>
+        <span style="color:var(--text2)">Total: <strong style="color:var(--text)">${ev.totalTickets}</strong></span>
+      </div>
+
+      <div class="avail-bar-wrap">
+        <div class="avail-bar-fill ${fillClass}" style="width:${pct}%"></div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:14px;">${pct}% sold</div>
+
+      <div class="form-row" style="margin-bottom:12px;">
+        <div>
+          <label class="field-label">Total Tickets</label>
+          <input class="field-input" type="number" value="${ev.totalTickets}" id="tav-total-${ev.id}" min="0">
+        </div>
+        <div>
+          <label class="field-label">Sold (Manual Override)</label>
+          <input class="field-input" type="number" value="${ev.soldTickets||0}" id="tav-sold-${ev.id}" min="0">
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="btn-primary" style="padding:9px 16px;font-size:11px;" onclick="saveTicketAvail('${ev.id}')">Save</button>
+        <div class="toggle-wrap" style="flex:1;min-width:160px;">
+          <label class="toggle">
+            <input type="checkbox" ${ev.soldOut?'checked':''} id="tav-so-${ev.id}" onchange="toggleSoldOut('${ev.id}',this)">
+            <span class="toggle-slider"></span>
+          </label>
+          <div>
+            <div class="toggle-label" style="font-size:12px;">Force Sold Out</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function saveTicketAvail(id) {
+  const events = getEvents();
+  const idx    = events.findIndex(e => e.id === id);
+  if (idx < 0) return;
+  events[idx].totalTickets = parseInt(document.getElementById('tav-total-'+id)?.value)||0;
+  events[idx].soldTickets  = parseInt(document.getElementById('tav-sold-'+id)?.value)||0;
+  DB.set('events', events);
+  renderTickets();
+  toast('Availability updated ✓', 'success');
+}
+
+function toggleSoldOut(id, cb) {
+  const events = getEvents();
+  const idx = events.findIndex(e => e.id === id);
+  if (idx >= 0) { events[idx].soldOut = cb.checked; DB.set('events', events); }
+  toast(cb.checked ? 'Marked as sold out' : 'Sold out removed');
+}
+
+// ═══════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════
+
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+function sanitize(str) {
+  return String(str||'').replace(/[<>\"&']/g, c => ({'<':'&lt;','>':'&gt;','"':'&quot;','&':'&amp;',"'":'&#x27;'})[c]||c);
+}
+
+let toastTimer;
+function toast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'on' + (type ? ' '+type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.className = '', 2800);
+}
+</script>
+</body>
+</html>
