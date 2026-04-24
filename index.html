@@ -1892,5 +1892,205 @@ setInterval(()=>{
 // Process IG on load
 window.addEventListener('load',()=>setTimeout(processIG,1000));
 </script>
+  <!-- ════════════════════════════════════════════════════════
+     FOOD BY K — DYNAMIC PATCH
+     Paste this entire block just before </body> in index.html
+     Replaces the static menu/events/hours/announcement with
+     live data from Supabase.
+     ════════════════════════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+  const SB_URL = 'https://cuzqkwznwsuhjnwqqrix.supabase.co';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1enFrd3pud3N1aGpud3Fxcml4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1NTMxNTAsImV4cCI6MjA5MjEyOTE1MH0.Kwk23gVcmDMcCN2APdE8zX8i7hMZC606DVzZz5n9lZ0';
+  const sb = supabase.createClient(SB_URL, SB_KEY);
+  const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const CAT = {kota:'Kota',sandwiches:'Sandwiches',burgers:'Burgers',platters:'Platters',wraps:'Wraps',specialty:'Specialty',drinks:'Drinks',addons:'Add-ons'};
+
+  // ── 1. ANNOUNCEMENT BANNER ────────────────────────────
+  async function loadBanner(){
+    const {data} = await sb.from('announcements').select('*').eq('active',true).limit(1).single();
+    if(!data || !data.message) return;
+    const existing = document.getElementById('fbk-banner');
+    if(existing) existing.remove();
+    const b = document.createElement('div');
+    b.id = 'fbk-banner';
+    b.style.cssText='position:sticky;top:0;z-index:200;background:linear-gradient(90deg,var(--ember-deep),var(--ember));color:white;text-align:center;padding:10px 44px 10px 16px;font-family:\'Montserrat\',sans-serif;font-size:11px;font-weight:600;letter-spacing:0.5px;line-height:1.4;';
+    b.innerHTML=`<span>${esc(data.message)}</span><button onclick="this.parentElement.remove()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:rgba(255,255,255,0.2);border:none;color:white;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:16px;line-height:1;">×</button>`;
+    const home = document.getElementById('page-home');
+    if(home) home.insertBefore(b, home.firstChild);
+  }
+
+  // ── 2. DYNAMIC MENU ───────────────────────────────────
+  async function loadMenu(){
+    const {data} = await sb.from('menu_items').select('*').order('category').order('sort_order');
+    if(!data || !data.length) return;
+
+    // Patch global ITEMS map so openItem() still works
+    if(window.ITEMS){
+      data.forEach(item => {
+        window.ITEMS[item.id] = {
+          name: item.name, desc: item.description,
+          price: item.price, img: item.image_url||'', available: item.available
+        };
+      });
+    }
+
+    // Group by category
+    const grouped = {};
+    data.forEach(item => {
+      const c = item.category||'kota';
+      if(!grouped[c]) grouped[c]=[];
+      grouped[c].push(item);
+    });
+
+    const cats = Object.keys(grouped);
+
+    // Rebuild category pills
+    const pillsEl = document.querySelector('.menu-cats');
+    if(pillsEl){
+      pillsEl.innerHTML = cats.map((cat,i) =>
+        `<button class="cat-pill${i===0?' on':''}" onclick="filterCat('${cat}',this)">${esc(CAT[cat]||cat)}</button>`
+      ).join('');
+    }
+
+    // Rebuild menu body
+    const bodyEl = document.querySelector('.menu-body');
+    if(!bodyEl) return;
+    bodyEl.innerHTML = cats.map((cat,i) => {
+      const items = grouped[cat];
+      return `<div class="menu-sec${i===0?' on':''}" id="cat-${cat}">
+        ${items.map(item => {
+          const avail = item.available !== false;
+          const img = item.image_url || 'https://images.unsplash.com/photo-1550547660-d9450f859349?w=220&q=80';
+          return `<div class="menu-card${avail?'':' sold-out-card'}"
+            onclick="${avail ? `openItem('${item.id}')` : `showToast && showToast('Sold out today')`}"
+            style="${avail?'':'opacity:0.55;cursor:default;'}">
+            <div class="mc-info">
+              <div class="mc-name">${esc(item.name)}</div>
+              <div class="mc-desc">${esc(item.description||'')}</div>
+              <div class="mc-footer">
+                <span class="mc-price">R${Number(item.price).toFixed(0)}</span>
+                ${avail
+                  ? `<div class="mc-add">+</div>`
+                  : `<div class="mc-add" style="background:var(--night-3);color:var(--soul-3);font-size:9px;font-family:'Montserrat',sans-serif;padding:0 8px;font-weight:700;letter-spacing:1px;">SOLD</div>`
+                }
+              </div>
+            </div>
+            <img class="mc-img" src="${esc(img)}" alt="${esc(item.name)}" onerror="this.src='https://images.unsplash.com/photo-1550547660-d9450f859349?w=220&q=80'">
+          </div>`;
+        }).join('')}
+      </div>`;
+    }).join('');
+  }
+
+  // ── 3. DYNAMIC EVENTS ─────────────────────────────────
+  async function loadEvents(){
+    const {data} = await sb.from('events').select('*').eq('active',true).order('created_at',{ascending:false});
+    if(!data || !data.length) return;
+
+    const bodyEl = document.querySelector('.events-body') || document.querySelector('#page-events');
+    if(!bodyEl) return;
+
+    // Keep header (eyebrow/title block if present)
+    const header = bodyEl.querySelector('.page-topbar') || bodyEl.querySelector('.page-header');
+
+    bodyEl.innerHTML = '';
+    if(header) bodyEl.appendChild(header);
+
+    data.forEach(ev => {
+      const tickets = Array.isArray(ev.tickets) ? ev.tickets : [];
+      const isSoldOut = ev.sold_out === true;
+      const dateStr = ev.event_date
+        ? new Date(ev.event_date+'T00:00:00').toLocaleDateString('en-ZA',{weekday:'long',day:'numeric',month:'long',year:'numeric'})
+        : (ev.recurring_day || 'Date TBC');
+
+      // Countdown for special events
+      let cdHtml = '';
+      if(!ev.is_recurring && ev.event_date){
+        const target = new Date(ev.event_date + (ev.start_time ? 'T'+ev.start_time : 'T00:00:00'));
+        const diff = target - new Date();
+        if(diff > 0){
+          const d=Math.floor(diff/86400000), h=Math.floor((diff%86400000)/3600000), m=Math.floor((diff%3600000)/60000);
+          cdHtml = `<div style="display:flex;gap:10px;margin-bottom:16px;">
+            ${[['Days',d],['Hrs',h],['Min',m]].map(([l,v])=>`
+            <div style="text-align:center;background:var(--night-3);border:1px solid var(--glass-border);border-radius:12px;padding:10px 14px;min-width:52px;">
+              <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--ember-glow);">${v}</div>
+              <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--soul-3);">${l}</div>
+            </div>`).join('')}
+          </div>`;
+        }
+      }
+
+      const tixHtml = tickets.map(t => `
+        <div style="background:var(--night-3);border:1px solid var(--glass-border);border-radius:10px;padding:10px 14px;margin-right:8px;margin-bottom:8px;display:inline-block;">
+          <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--soul-3);">${esc(t.label)}</div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--ember-glow);">${t.free?'FREE':'R'+t.price}</div>
+        </div>`).join('');
+
+      const card = document.createElement('div');
+      card.className = 'event-card glass';
+      card.style.marginBottom='16px';
+      card.innerHTML = `
+        ${ev.image_url?`<img src="${esc(ev.image_url)}" style="width:100%;height:180px;object-fit:cover;border-radius:16px;margin-bottom:14px;" onerror="this.style.display='none'">`:''}
+        <div style="padding:0 2px;">
+          <div style="margin-bottom:8px;">
+            <span style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:4px 10px;border-radius:6px;${ev.is_recurring?'background:var(--night-4);color:var(--soul-2);border:1px solid var(--glass-border);':'background:var(--ember);color:white;'}">
+              ${ev.is_recurring?'🔁 Recurring':'⚡ Special Event'}
+            </span>
+            ${isSoldOut?`<span style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:4px 10px;border-radius:6px;background:rgba(255,68,68,0.15);color:#FF4444;border:1px solid rgba(255,68,68,0.3);margin-left:6px;">Sold Out</span>`:''}
+          </div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--white);margin-bottom:4px;">${esc(ev.name)}</div>
+          ${ev.subtitle?`<div style="font-size:12px;color:var(--ember-glow);font-family:'Montserrat',sans-serif;font-weight:600;letter-spacing:0.5px;margin-bottom:6px;">${esc(ev.subtitle)}</div>`:''}
+          <div style="font-size:12px;color:var(--soul-3);margin-bottom:12px;">${esc(dateStr)}</div>
+          ${ev.description?`<p style="font-size:13px;color:var(--soul-3);margin-bottom:14px;line-height:1.6;">${esc(ev.description)}</p>`:''}
+          ${cdHtml}
+          ${tickets.length?`<div style="flex-wrap:wrap;">${tixHtml}</div>`:''}
+        </div>`;
+      bodyEl.appendChild(card);
+    });
+  }
+
+  // ── 4. DYNAMIC TRADING HOURS ──────────────────────────
+  async function loadHours(){
+    const {data} = await sb.from('trading_hours').select('*').order('day_order');
+    if(!data || !data.length) return;
+
+    // Find the hours container — try common selectors
+    const hoursEl = document.getElementById('trading-hours-list')
+      || document.querySelector('.hours-list')
+      || document.querySelector('[id*="hours-list"]')
+      || document.querySelector('.trading-hours');
+    if(!hoursEl) return;
+
+    hoursEl.innerHTML = data.map(h => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--glass-border);">
+        <span style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--soul-3);">${esc(h.day_name)}</span>
+        <span style="font-size:13px;color:${h.is_closed?'#FF4444':'var(--soul)'};">
+          ${h.is_closed ? 'Closed' : (h.open_time||'').slice(0,5)+' – '+(h.close_time||'').slice(0,5)}
+        </span>
+      </div>`).join('');
+  }
+
+  // ── 5. HOOK INTO NAVIGATE ─────────────────────────────
+  if(typeof window.navigate === 'function'){
+    const _nav = window.navigate;
+    window.navigate = function(page){
+      _nav(page);
+      if(page==='menu') loadMenu();
+      if(page==='events') loadEvents();
+      if(page==='findus') loadHours();
+    };
+  }
+
+  // ── 6. FIRE ON LOAD ───────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    loadBanner();
+    loadMenu();
+    loadEvents();
+    loadHours();
+  });
+})();
+</script>
 </body>
 </html>
