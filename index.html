@@ -10,7 +10,7 @@
     img-src 'self' data: https://images.unsplash.com https://www.instagram.com https://cdnjs.cloudflare.com;
     font-src 'self' https://fonts.gstatic.com;
     frame-src https://www.instagram.com https://www.google.com https://www.payfast.co.za;
-    connect-src 'self' https://www.payfast.co.za https://cuzqkwznwsuhjnwqqrix.supabase.co;
+    connect-src 'self' https://www.payfast.co.za https://cuzqkwznwsuhjnwqqrix.supabase.co https://cdn.jsdelivr.net;
     form-action https://www.payfast.co.za 'self';
     base-uri 'self';
     upgrade-insecure-requests;
@@ -2108,6 +2108,7 @@ window.addEventListener('load',()=>setTimeout(processIG,1000));
   }
 })();
 </script>
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/patch.js"></script>
 </body>
 </html>
