@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>Food By K — Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700;800&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ember:#D94F00;--ember-deep:#B03E00;--ember-glow:#F26419;
+  --night:#0C0B09;--night-2:#161310;--night-3:#1F1A15;--night-4:#2A2218;
+  --soul:#F2E8D9;--soul-2:#D9C9B0;--soul-3:#A08060;--white:#FFFFFF;
+  --glass-bg:rgba(30,24,18,0.75);--glass-border:rgba(242,100,25,0.18);
+  --glass-shine:rgba(242,232,217,0.06);
+  --ease:cubic-bezier(0.4,0,0.2,1);--spring:cubic-bezier(0.34,1.56,0.64,1);
+  --danger:#FF4444;--success:#4CAF50;--warning:#F5A623;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;-webkit-tap-highlight-color:transparent;}
+body{background:var(--night);color:var(--soul);font-family:'Lato',sans-serif;font-weight:300;overflow-x:hidden;-webkit-font-smoothing:antialiased;min-height:100svh;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cg fill='none' stroke='%23F2E8D9' stroke-width='0.7' opacity='0.04'%3E%3Cpath d='M22 12 L22 34 M19 12 L19 20 M22 12 L22 20 M25 12 L25 20'/%3E%3C/g%3E%3C/svg%3E");background-size:140px 140px;pointer-events:none;z-index:0;}
+
+/* ── LOCK ─────────────────────────────────────────────── */
+#lock-screen{position:fixed;inset:0;background:var(--night);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;}
+.lock-logo{font-family:'Cormorant Garamond',serif;font-size:42px;font-weight:700;color:var(--white);letter-spacing:-1px;margin-bottom:4px;}
+.lock-logo span{color:var(--ember-glow);font-style:italic;}
+.lock-sub{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:var(--soul-3);margin-bottom:48px;}
+.lock-card{width:100%;max-width:360px;background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:24px;padding:32px 28px;backdrop-filter:blur(20px);}
+.lock-input{width:100%;background:var(--night-3);border:1px solid var(--glass-border);border-radius:12px;padding:14px 16px;color:var(--soul);font-family:'Lato',sans-serif;font-size:16px;letter-spacing:3px;outline:none;transition:border-color 0.2s;margin-top:8px;}
+.lock-input:focus{border-color:var(--ember-glow);}
+.lock-input.shake{animation:shake 0.4s ease;}
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-8px);}75%{transform:translateX(8px);}50%{transform:translateX(-4px);}}
+.lock-error{font-size:10px;color:var(--danger);margin-top:8px;min-height:16px;font-family:'Montserrat',sans-serif;font-weight:600;letter-spacing:1px;}
+.lock-btn{width:100%;margin-top:20px;background:var(--ember);color:white;padding:16px;border-radius:14px;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;border:none;cursor:pointer;transition:all 0.2s;}
+.lock-btn:active{transform:scale(0.97);background:var(--ember-deep);}
+
+/* ── APP SHELL ────────────────────────────────────────── */
+#app{display:none;min-height:100svh;position:relative;z-index:1;}
+.top-bar{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:rgba(12,11,9,0.94);backdrop-filter:blur(24px);border-bottom:1px solid var(--glass-border);}
+.top-bar-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:var(--ember-glow);}
+.top-bar-sub{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--soul-3);}
+.top-bar-right{display:flex;align-items:center;gap:10px;}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--success);transition:background 0.3s;}
+.sync-dot.syncing{background:var(--warning);animation:pulse 1s infinite;}
+.sync-dot.err{background:var(--danger);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
+.logout-btn{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--soul-3);padding:7px 12px;border-radius:8px;border:1px solid var(--glass-border);background:transparent;cursor:pointer;}
+
+/* ── TABS ─────────────────────────────────────────────── */
+.tabs-wrap{position:sticky;top:57px;z-index:99;background:var(--night-2);border-bottom:1px solid var(--glass-border);}
+.tabs{display:flex;overflow-x:auto;scrollbar-width:none;padding:0 8px;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex-shrink:0;padding:14px 16px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--soul-3);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;white-space:nowrap;}
+.tab.active{color:var(--ember-glow);border-bottom-color:var(--ember-glow);}
+
+/* ── SECTIONS ─────────────────────────────────────────── */
+.section{display:none;padding:20px;padding-bottom:80px;}
+.section.active{display:block;animation:fadeUp 0.3s var(--ease);}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.eyebrow{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:var(--ember-glow);margin-bottom:4px;}
+.sec-title{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;color:var(--white);line-height:1;}
+.sec-desc{font-size:12px;color:var(--soul-3);margin-top:6px;margin-bottom:20px;}
+
+/* ── BUTTONS ──────────────────────────────────────────── */
+.add-btn{display:flex;align-items:center;gap:8px;background:var(--ember);color:white;padding:13px 20px;border-radius:14px;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;border:none;cursor:pointer;transition:all 0.2s;margin-bottom:20px;}
+.add-btn:active{transform:scale(0.97);background:var(--ember-deep);}
+.add-btn svg{width:15px;height:15px;fill:none;stroke:white;stroke-width:2.5;stroke-linecap:round;}
+.btn-primary{background:var(--ember);color:white;padding:15px;border-radius:14px;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;border:none;cursor:pointer;transition:all 0.2s;flex:1;}
+.btn-primary:active{transform:scale(0.97);background:var(--ember-deep);}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+.btn-ghost{padding:15px 20px;border-radius:14px;border:1px solid var(--glass-border);background:transparent;color:var(--soul-3);font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;}
+
+/* ── CARDS ────────────────────────────────────────────── */
+.card{background:var(--glass-bg);backdrop-filter:blur(16px);border:1px solid var(--glass-border);border-radius:18px;padding:18px;margin-bottom:12px;position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--glass-shine),transparent 60%);pointer-events:none;}
+.card-name{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:var(--white);line-height:1.1;margin-bottom:3px;}
+.card-meta{font-size:11px;color:var(--soul-3);margin-bottom:8px;}
+.card-price{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--ember-glow);}
+.badge{display:inline-flex;align-items:center;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:4px 9px;border-radius:6px;margin-right:4px;margin-top:4px;}
+.b-ok{background:rgba(76,175,80,0.15);color:var(--success);border:1px solid rgba(76,175,80,0.3);}
+.b-sold{background:rgba(255,68,68,0.15);color:var(--danger);border:1px solid rgba(255,68,68,0.3);}
+.b-special{background:var(--ember);color:white;}
+.b-recurring{background:var(--night-4);color:var(--soul-2);border:1px solid var(--glass-border);}
+.b-hidden{background:var(--night-4);color:var(--soul-3);border:1px solid var(--glass-border);}
+.card-actions{display:flex;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--glass-border);}
+.act-btn{flex:1;padding:10px;border-radius:10px;border:1px solid var(--glass-border);background:transparent;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:5px;color:var(--soul-3);}
+.act-btn svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;}
+.act-edit{border-color:rgba(242,100,25,0.3);color:var(--ember-glow);}
+.act-del{border-color:rgba(255,68,68,0.25);color:var(--danger);}
+.act-btn:active{transform:scale(0.97);}
+
+/* ── FORM ─────────────────────────────────────────────── */
+.form-group{margin-bottom:18px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+label.form-label{display:block;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--soul-3);margin-bottom:8px;}
+input,textarea,select{width:100%;background:var(--night-3);border:1px solid var(--glass-border);border-radius:12px;padding:13px 15px;color:var(--soul);font-family:'Lato',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s;-webkit-appearance:none;}
+input:focus,textarea:focus,select:focus{border-color:var(--ember-glow);}
+textarea{resize:vertical;min-height:80px;line-height:1.5;}
+select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23A08060' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;}
+select option{background:var(--night-3);}
+
+/* ── TOGGLE ───────────────────────────────────────────── */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--glass-border);}
+.toggle-row:last-child{border-bottom:none;}
+.trow-label{font-size:13px;color:var(--soul);}
+.trow-sub{font-size:11px;color:var(--soul-3);margin-top:2px;}
+.toggle{position:relative;width:46px;height:26px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-track{position:absolute;inset:0;border-radius:13px;background:var(--night-4);border:1px solid var(--glass-border);cursor:pointer;transition:all 0.25s;}
+.toggle input:checked+.toggle-track{background:var(--ember);border-color:var(--ember);}
+.toggle-track::after{content:'';position:absolute;left:3px;top:50%;transform:translateY(-50%);width:18px;height:18px;border-radius:50%;background:var(--soul-3);transition:all 0.25s var(--spring);}
+.toggle input:checked+.toggle-track::after{left:23px;background:white;}
+
+/* ── MODAL ────────────────────────────────────────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(12,11,9,0.85);backdrop-filter:blur(8px);z-index:500;display:none;align-items:flex-end;}
+.modal-overlay.open{display:flex;animation:fadeIn 0.2s ease;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.modal{width:100%;max-height:93svh;overflow-y:auto;background:var(--night-2);border-top:1px solid var(--glass-border);border-radius:24px 24px 0 0;animation:slideUp 0.3s var(--spring);}
+@keyframes slideUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.modal-handle{width:36px;height:4px;border-radius:2px;background:var(--night-4);margin:12px auto 0;}
+.modal-head{padding:20px 24px 16px;border-bottom:1px solid var(--glass-border);}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;color:var(--white);}
+.modal-body{padding:24px;}
+.modal-footer{padding:16px 24px 28px;border-top:1px solid var(--glass-border);display:flex;gap:10px;}
+
+/* ── TICKET BUILDER ───────────────────────────────────── */
+.ticket-item{background:var(--night-3);border:1px solid var(--glass-border);border-radius:12px;padding:14px;margin-bottom:8px;position:relative;}
+.ticket-grid{display:grid;grid-template-columns:1fr 90px;gap:8px;align-items:end;}
+.ticket-grid .form-group{margin-bottom:0;}
+.rm-ticket{position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:6px;background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.2);color:var(--danger);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;}
+.add-ticket-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;border-radius:10px;border:1px dashed var(--glass-border);background:transparent;color:var(--soul-3);font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;width:100%;transition:all 0.2s;}
+.add-ticket-btn:active{border-color:var(--ember-glow);color:var(--ember-glow);}
+
+/* ── HOURS ────────────────────────────────────────────── */
+.hday{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+.hday-name{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--soul);width:80px;flex-shrink:0;}
+.hday-inputs{display:flex;align-items:center;gap:8px;flex:1;}
+.hday-inputs input{flex:1;padding:8px 10px;font-size:13px;min-width:0;border-radius:9px;}
+.hday-sep{color:var(--soul-3);font-size:11px;flex-shrink:0;}
+.closed-badge{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--danger);padding:5px 10px;background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.2);border-radius:6px;}
+
+/* ── TICKETS AVAIL ────────────────────────────────────── */
+.ta-card{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:18px;padding:18px;margin-bottom:12px;}
+.ta-event-name{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--white);margin-bottom:3px;}
+.ta-event-sub{font-size:11px;color:var(--soul-3);margin-bottom:14px;}
+.ta-ticket{background:var(--night-3);border:1px solid var(--glass-border);border-radius:12px;padding:12px 14px;margin-bottom:8px;}
+.ta-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.ta-name{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--soul-3);}
+.ta-price{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;color:var(--ember-glow);}
+.ta-bar-wrap{height:6px;background:var(--night-4);border-radius:3px;overflow:hidden;margin-bottom:6px;}
+.ta-bar{height:100%;border-radius:3px;background:var(--ember-glow);transition:width 0.5s var(--ease);}
+.ta-stats{display:flex;justify-content:space-between;font-size:10px;color:var(--soul-3);font-family:'Montserrat',sans-serif;margin-bottom:10px;}
+.ta-override{display:flex;gap:8px;align-items:center;}
+.ta-override input{flex:1;padding:8px 10px;font-size:13px;border-radius:9px;}
+.ta-override-btn{padding:8px 14px;border-radius:9px;background:var(--ember);color:white;border:none;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;white-space:nowrap;}
+
+/* ── ORDERS ───────────────────────────────────────────── */
+.order-card{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:16px;padding:16px;margin-bottom:10px;}
+.order-id{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--soul-3);}
+.order-name{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:var(--white);margin:3px 0;}
+.order-amount{color:var(--ember-glow);font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;}
+.status-badge{display:inline-flex;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:4px 9px;border-radius:6px;margin-top:6px;}
+.s-pending{background:rgba(245,166,35,0.15);color:var(--warning);border:1px solid rgba(245,166,35,0.3);}
+.s-paid{background:rgba(76,175,80,0.15);color:var(--success);border:1px solid rgba(76,175,80,0.3);}
+.s-collected{background:rgba(160,128,96,0.15);color:var(--soul-3);border:1px solid var(--glass-border);}
+.s-failed,.s-expired{background:rgba(255,68,68,0.15);color:var(--danger);border:1px solid rgba(255,68,68,0.3);}
+.collect-btn{width:100%;margin-top:12px;padding:12px;border-radius:12px;border:none;background:var(--ember);color:white;font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;}
+.collect-btn:active{transform:scale(0.97);}
+
+/* ── ANNOUNCE ─────────────────────────────────────────── */
+.ann-card{background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:20px;padding:24px;}
+.ann-preview{margin-top:16px;padding:14px 18px;border-radius:12px;background:rgba(242,100,25,0.12);border:1px solid rgba(242,100,25,0.25);font-size:13px;line-height:1.5;display:none;}
+.ann-preview.show{display:block;}
+.ann-preview-lbl{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--ember-glow);margin-bottom:6px;}
+
+/* ── MISC ─────────────────────────────────────────────── */
+.empty{text-align:center;padding:48px 20px;}
+.empty-icon{font-size:44px;margin-bottom:12px;}
+.empty-title{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;color:var(--soul-3);margin-bottom:4px;}
+.empty-sub{font-size:12px;color:var(--soul-3);}
+.loading{display:flex;align-items:center;justify-content:center;padding:48px;}
+.spinner{width:32px;height:32px;border:2px solid var(--glass-border);border-top-color:var(--ember-glow);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ember);color:white;padding:12px 24px;border-radius:30px;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;z-index:9999;opacity:0;pointer-events:none;transition:all 0.3s var(--spring);white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.err{background:var(--danger);}
+.confirm-overlay{position:fixed;inset:0;background:rgba(12,11,9,0.9);backdrop-filter:blur(8px);z-index:600;display:none;align-items:center;justify-content:center;padding:24px;}
+.confirm-overlay.open{display:flex;}
+.confirm-box{background:var(--night-2);border:1px solid var(--glass-border);border-radius:20px;padding:28px;width:100%;max-width:320px;text-align:center;}
+.confirm-title{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;color:var(--white);margin-bottom:8px;}
+.confirm-msg{font-size:13px;color:var(--soul-3);margin-bottom:24px;line-height:1.5;}
+.confirm-btns{display:flex;gap:10px;}
+.confirm-yes{flex:1;padding:13px;border-radius:12px;border:none;background:var(--danger);color:white;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;}
+.confirm-no{flex:1;padding:13px;border-radius:12px;border:1px solid var(--glass-border);background:transparent;color:var(--soul-3);font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOCK ═══ -->
+<div id="lock-screen">
+  <div class="lock-logo">Food By <span>K</span></div>
+  <div class="lock-sub">Admin Panel</div>
+  <div class="lock-card">
+    <label class="form-label" for="pin-input" style="margin-bottom:0;">Access Code</label>
+    <input type="password" class="lock-input" id="pin-input" placeholder="••••••••••" autocomplete="off">
+    <div class="lock-error" id="pin-error"></div>
+    <button class="lock-btn" onclick="checkPin()">Enter Admin</button>
+  </div>
+</div>
+
+<!-- ═══ APP ═══ -->
+<div id="app">
+  <div class="top-bar">
+    <div>
+      <div class="top-bar-title">Food By K</div>
+      <div class="top-bar-sub">Admin Panel</div>
+    </div>
+    <div class="top-bar-right">
+      <span class="sync-dot" id="sync-dot" title="Live"></span>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="tabs-wrap">
+    <div class="tabs">
+      <div class="tab active" data-tab="menu">Menu</div>
+      <div class="tab" data-tab="events">Events</div>
+      <div class="tab" data-tab="announcements">Banner</div>
+      <div class="tab" data-tab="hours">Hours</div>
+      <div class="tab" data-tab="tickets">Tickets</div>
+      <div class="tab" data-tab="orders">Orders</div>
+    </div>
+  </div>
+
+  <!-- MENU -->
+  <div class="section active" id="section-menu">
+    <div class="eyebrow">Manage</div><h1 class="sec-title">Menu</h1>
+    <p class="sec-desc">Changes go live instantly on the website</p>
+    <button class="add-btn" onclick="openMenuModal()"><svg viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></svg>Add Item</button>
+    <div id="menu-list"></div>
+  </div>
+
+  <!-- EVENTS -->
+  <div class="section" id="section-events">
+    <div class="eyebrow">Manage</div><h1 class="sec-title">Events</h1>
+    <p class="sec-desc">Changes go live instantly on the website</p>
+    <button class="add-btn" onclick="openEventModal()"><svg viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></svg>Add Event</button>
+    <div id="events-list"></div>
+  </div>
+
+  <!-- BANNER -->
+  <div class="section" id="section-announcements">
+    <div class="eyebrow">Manage</div><h1 class="sec-title">Banner</h1>
+    <p class="sec-desc">Shows a message at the top of the home page</p>
+    <div class="ann-card">
+      <div class="toggle-row">
+        <div><div class="trow-label">Show Banner</div><div class="trow-sub">Displays on the live website immediately</div></div>
+        <label class="toggle"><input type="checkbox" id="ann-toggle"><div class="toggle-track"></div></label>
+      </div>
+      <div class="form-group" style="margin-top:18px;margin-bottom:0;">
+        <label class="form-label" for="ann-msg">Message</label>
+        <textarea id="ann-msg" rows="3" placeholder="e.g. Kitchen closes early today at 4PM ⚡" oninput="updateAnnPreview()"></textarea>
+      </div>
+      <div id="ann-preview" class="ann-preview">
+        <div class="ann-preview-lbl">Preview</div>
+        <div id="ann-preview-text"></div>
+      </div>
+      <button class="btn-primary" style="width:100%;margin-top:18px;" onclick="saveAnnouncement()">Save Banner</button>
+    </div>
+    <div id="ann-history" style="margin-top:20px;"></div>
+  </div>
+
+  <!-- HOURS -->
+  <div class="section" id="section-hours">
+    <div class="eyebrow">Manage</div><h1 class="sec-title">Trading Hours</h1>
+    <p class="sec-desc">Set open/close times and mark closed days</p>
+    <div id="hours-table"></div>
+    <button class="btn-primary" style="width:100%;margin-top:20px;" onclick="saveHours()">Save Hours</button>
+  </div>
+
+  <!-- TICKETS -->
+  <div class="section" id="section-tickets">
+    <div class="eyebrow">Manage</div><h1 class="sec-title">Ticket Availability</h1>
+    <p class="sec-desc">Monitor sales and override counts per event</p>
+    <div id="tickets-list"></div>
+  </div>
+
+  <!-- ORDERS -->
+  <div class="section" id="section-orders">
+    <div class="eyebrow">Live</div><h1 class="sec-title">Orders</h1>
+    <p class="sec-desc">Tap paid orders to mark as collected</p>
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <button onclick="renderOrders()" style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;color:var(--ember-glow);padding:8px 14px;border-radius:8px;border:1px solid rgba(242,100,25,0.3);background:transparent;cursor:pointer;letter-spacing:1px;text-transform:uppercase;">↻ Refresh</button>
+      <button onclick="clearCollected()" style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:600;color:var(--soul-3);padding:8px 14px;border-radius:8px;border:1px solid var(--glass-border);background:transparent;cursor:pointer;letter-spacing:1px;text-transform:uppercase;">Clear Collected</button>
+    </div>
+    <div id="orders-list"></div>
+  </div>
+</div>
+
+<!-- MENU MODAL -->
+<div class="modal-overlay" id="menu-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-head"><div class="modal-title" id="menu-modal-title">New Menu Item</div></div>
+    <div class="modal-body">
+      <input type="hidden" id="mi-id">
+      <div class="form-group"><label class="form-label">Item Name</label><input type="text" id="mi-name" placeholder="e.g. Regular Joe Kota"></div>
+      <div class="form-group"><label class="form-label">Description</label><textarea id="mi-desc" placeholder="What's in it?"></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Price (R)</label><input type="number" id="mi-price" placeholder="0" min="0" step="1"></div>
+        <div class="form-group"><label class="form-label">Category</label>
+          <select id="mi-cat">
+            <option value="kota">Kota</option><option value="sandwiches">Sandwiches</option>
+            <option value="burgers">Burgers</option><option value="platters">Platters</option>
+            <option value="wraps">Wraps</option><option value="specialty">Specialty</option>
+            <option value="drinks">Drinks</option><option value="addons">Add-ons</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Photo URL</label><input type="url" id="mi-photo" placeholder="https://images.unsplash.com/..."></div>
+      <div class="form-group"><label class="form-label">Display Order</label><input type="number" id="mi-order" placeholder="0" min="0"></div>
+      <div class="toggle-row" style="padding-top:0;">
+        <div><div class="trow-label">Available Today</div><div class="trow-sub">Toggle off = sold out</div></div>
+        <label class="toggle"><input type="checkbox" id="mi-available" checked><div class="toggle-track"></div></label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeMenuModal()">Cancel</button>
+      <button class="btn-primary" id="mi-save-btn" onclick="saveMenuItem()">Save Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- EVENT MODAL -->
+<div class="modal-overlay" id="event-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-head"><div class="modal-title" id="ev-modal-title">New Event</div></div>
+    <div class="modal-body">
+      <input type="hidden" id="ev-id">
+      <div class="form-group"><label class="form-label">Event Name</label><input type="text" id="ev-name" placeholder="e.g. Kota Saturdayz"></div>
+      <div class="form-group"><label class="form-label">Subtitle</label><input type="text" id="ev-subtitle" placeholder="e.g. Every Saturday from 12PM"></div>
+      <div class="form-group"><label class="form-label">Description</label><textarea id="ev-desc" placeholder="Tell people what to expect..."></textarea></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Event Date</label><input type="date" id="ev-date"></div>
+        <div class="form-group"><label class="form-label">Start Time</label><input type="time" id="ev-time"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Event Poster URL</label><input type="url" id="ev-poster" placeholder="https://..."></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Type</label>
+          <select id="ev-type">
+            <option value="false">Special (with countdown)</option>
+            <option value="true">Recurring (no countdown)</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Recurring Day</label>
+          <select id="ev-recday">
+            <option value="">N/A</option>
+            <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+            <option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Total Tickets</label><input type="number" id="ev-total" placeholder="0" min="0"></div>
+        <div class="form-group"><label class="form-label">Status</label>
+          <select id="ev-soldout"><option value="false">Available</option><option value="true">Sold Out</option></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ticket Types</label>
+        <div id="ticket-builder"></div>
+        <button class="add-ticket-btn" onclick="addTicketRow()">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 2v8M2 6h8"/></svg>
+          Add Ticket Type
+        </button>
+      </div>
+      <div class="toggle-row" style="padding-top:0;">
+        <div><div class="trow-label">Active</div><div class="trow-sub">Show this event on the website</div></div>
+        <label class="toggle"><input type="checkbox" id="ev-active" checked><div class="toggle-track"></div></label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeEventModal()">Cancel</button>
+      <button class="btn-primary" id="ev-save-btn" onclick="saveEvent()">Save Event</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DIALOG -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirm-title">Delete?</div>
+    <div class="confirm-msg" id="confirm-msg">This cannot be undone.</div>
+    <div class="confirm-btns">
+      <button class="confirm-no" onclick="closeConfirm()">Cancel</button>
+      <button class="confirm-yes" id="confirm-yes">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════════════════════
+const SB_URL  = 'https://cuzqkwznwsuhjnwqqrix.supabase.co';
+const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1enFrd3pud3N1aGpud3Fxcml4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1NTMxNTAsImV4cCI6MjA5MjEyOTE1MH0.Kwk23gVcmDMcCN2APdE8zX8i7hMZC606DVzZz5n9lZ0';
+const PIN     = 'FoodByK2025';
+const CAT_LBL = {kota:'Kota',sandwiches:'Sandwiches',burgers:'Burgers',platters:'Platters',wraps:'Wraps',specialty:'Specialty',drinks:'Drinks',addons:'Add-ons'};
+const DAYS    = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+let sb, hoursData = [], annActiveId = null, ttc = 0;
+
+// ══════════════════════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════════════════════
+document.getElementById('pin-input').addEventListener('keydown', e => { if(e.key==='Enter') checkPin(); });
+
+function checkPin(){
+  if(document.getElementById('pin-input').value === PIN){
+    sb = supabase.createClient(SB_URL, SB_KEY);
+    document.getElementById('lock-screen').style.display='none';
+    document.getElementById('app').style.display='block';
+    initApp();
+  } else {
+    const inp = document.getElementById('pin-input');
+    document.getElementById('pin-error').textContent = 'Incorrect access code';
+    inp.classList.add('shake'); inp.value='';
+    setTimeout(()=>inp.classList.remove('shake'), 500);
+  }
+}
+function logout(){
+  document.getElementById('app').style.display='none';
+  document.getElementById('lock-screen').style.display='flex';
+  document.getElementById('pin-input').value='';
+  document.getElementById('pin-error').textContent='';
+}
+
+// ══════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════
+async function initApp(){
+  sync(true);
+  initTabs();
+  await Promise.all([loadMenu(), loadEvents(), loadAnnouncement(), loadHours(), loadTickets(), loadOrders()]);
+  sync(false);
+}
+
+function initTabs(){
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.addEventListener('click',()=>{
+      document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById('section-'+t.dataset.tab).classList.add('active');
+    });
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+//  UTILITIES
+// ══════════════════════════════════════════════════════════
+const esc = s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const spin = id => document.getElementById(id).innerHTML='<div class="loading"><div class="spinner"></div></div>';
+function sync(on,err){
+  const d=document.getElementById('sync-dot');
+  d.className='sync-dot'+(err?' err':on?' syncing':'');
+  d.title=err?'Error':on?'Syncing...':'Live — Supabase connected';
+}
+
+let toastT;
+function toast(msg,isErr){
+  clearTimeout(toastT);
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(isErr?' err':'');
+  toastT=setTimeout(()=>t.className='toast',2800);
+}
+
+function confirm_(title,msg,cb){
+  document.getElementById('confirm-title').textContent=title;
+  document.getElementById('confirm-msg').textContent=msg;
+  document.getElementById('confirm-yes').onclick=()=>{closeConfirm();cb();};
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+function closeConfirm(){ document.getElementById('confirm-overlay').classList.remove('open'); }
+
+// ══════════════════════════════════════════════════════════
+//  MENU
+// ══════════════════════════════════════════════════════════
+async function loadMenu(){
+  spin('menu-list');
+  const {data,error}=await sb.from('menu_items').select('*').order('category').order('sort_order');
+  if(error){ toast('Failed to load menu',true); sync(false,true); return; }
+  renderMenuList(data||[]);
+}
+
+function renderMenuList(data){
+  const el=document.getElementById('menu-list');
+  if(!data.length){ el.innerHTML=`<div class="empty"><div class="empty-icon">🍽️</div><div class="empty-title">No menu items</div><div class="empty-sub">Tap "Add Item" to build your menu</div></div>`; return; }
+  const grouped={};
+  data.forEach(i=>{const c=i.category||'other'; if(!grouped[c])grouped[c]=[]; grouped[c].push(i);});
+  el.innerHTML=Object.entries(grouped).map(([cat,items])=>`
+    <div style="margin-bottom:22px;">
+      <div class="eyebrow" style="margin-bottom:10px;">${esc(CAT_LBL[cat]||cat)}</div>
+      ${items.map(item=>`
+        <div class="card">
+          ${item.image_url?`<img src="${esc(item.image_url)}" style="width:100%;height:130px;object-fit:cover;border-radius:12px;margin-bottom:12px;" onerror="this.style.display='none'">`: ''}
+          <div class="card-name">${esc(item.name)}</div>
+          <div class="card-price">R${Number(item.price).toFixed(0)}</div>
+          ${item.description?`<p style="font-size:12px;color:var(--soul-3);margin:6px 0;line-height:1.4;">${esc(item.description)}</p>`:''}
+          <div><span class="badge ${item.available?'b-ok':'b-sold'}">${item.available?'✓ Available':'✗ Sold Out'}</span></div>
+          <div class="card-actions">
+            <button class="act-btn act-edit" onclick="openMenuModal('${item.id}')">
+              <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
+            </button>
+            <button class="act-btn" onclick="toggleAvail('${item.id}',${item.available})"
+              style="color:${item.available?'var(--warning)':'var(--success)'};border-color:${item.available?'rgba(245,166,35,0.3)':'rgba(76,175,80,0.3)'}">
+              ${item.available?'Mark Sold Out':'Mark Available'}
+            </button>
+            <button class="act-btn act-del" onclick="deleteItem('${item.id}')">
+              <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M9 6V4h6v2"/></svg>Delete
+            </button>
+          </div>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+async function toggleAvail(id, cur){
+  sync(true);
+  const {error}=await sb.from('menu_items').update({available:!cur,updated_at:new Date().toISOString()}).eq('id',id);
+  sync(false,!!error);
+  if(error){toast('Update failed',true);return;}
+  toast(!cur?'Marked available ✓':'Marked sold out ✓');
+  loadMenu();
+}
+
+async function deleteItem(id){
+  confirm_('Delete Item','This permanently removes the item from your menu and the live website.',async()=>{
+    sync(true);
+    const {error}=await sb.from('menu_items').delete().eq('id',id);
+    sync(false,!!error);
+    if(error){toast('Delete failed',true);return;}
+    toast('Item deleted'); loadMenu();
+  });
+}
+
+function openMenuModal(id){
+  document.getElementById('menu-modal-title').textContent=id?'Edit Item':'New Menu Item';
+  document.getElementById('mi-id').value=id||'';
+  if(!id){
+    ['mi-name','mi-desc','mi-photo','mi-price','mi-order'].forEach(f=>document.getElementById(f).value='');
+    document.getElementById('mi-cat').value='kota';
+    document.getElementById('mi-available').checked=true;
+    document.getElementById('menu-modal').classList.add('open');
+    return;
+  }
+  sb.from('menu_items').select('*').eq('id',id).single().then(({data,error})=>{
+    if(error||!data){toast('Load failed',true);return;}
+    document.getElementById('mi-name').value=data.name||'';
+    document.getElementById('mi-desc').value=data.description||'';
+    document.getElementById('mi-price').value=data.price||'';
+    document.getElementById('mi-cat').value=data.category||'kota';
+    document.getElementById('mi-photo').value=data.image_url||'';
+    document.getElementById('mi-order').value=data.sort_order||0;
+    document.getElementById('mi-available').checked=data.available!==false;
+    document.getElementById('menu-modal').classList.add('open');
+  });
+}
+function closeMenuModal(){ document.getElementById('menu-modal').classList.remove('open'); }
+
+async function saveMenuItem(){
+  const name=document.getElementById('mi-name').value.trim();
+  if(!name){toast('Please enter a name');return;}
+  const btn=document.getElementById('mi-save-btn');
+  btn.disabled=true; btn.textContent='Saving...';
+  const id=document.getElementById('mi-id').value;
+  const payload={
+    name,
+    description:document.getElementById('mi-desc').value.trim()||'',
+    price:parseFloat(document.getElementById('mi-price').value)||0,
+    category:document.getElementById('mi-cat').value,
+    image_url:document.getElementById('mi-photo').value.trim()||'',
+    sort_order:parseInt(document.getElementById('mi-order').value)||0,
+    available:document.getElementById('mi-available').checked,
+    updated_at:new Date().toISOString()
+  };
+  sync(true);
+  const {error}=id ? await sb.from('menu_items').update(payload).eq('id',id) : await sb.from('menu_items').insert(payload);
+  sync(false,!!error);
+  btn.disabled=false; btn.textContent='Save Item';
+  if(error){toast('Save failed: '+error.message,true);return;}
+  closeMenuModal(); toast(id?'Item updated ✓':'Item added ✓'); loadMenu();
+}
+
+// ══════════════════════════════════════════════════════════
+//  EVENTS
+// ══════════════════════════════════════════════════════════
+async function loadEvents(){
+  spin('events-list');
+  const {data,error}=await sb.from('events').select('*').order('created_at',{ascending:false});
+  if(error){toast('Failed to load events',true);return;}
+  renderEventList(data||[]);
+}
+
+function renderEventList(data){
+  const el=document.getElementById('events-list');
+  if(!data.length){ el.innerHTML=`<div class="empty"><div class="empty-icon">🎉</div><div class="empty-title">No events yet</div><div class="empty-sub">Tap "Add Event" to create your first event</div></div>`; return; }
+  el.innerHTML=data.map(ev=>{
+    const tix=Array.isArray(ev.tickets)?ev.tickets:[];
+    const dateStr=ev.event_date
+      ? new Date(ev.event_date+'T00:00:00').toLocaleDateString('en-ZA',{day:'numeric',month:'short',year:'numeric'})
+      : (ev.recurring_day||'TBC');
+    return `<div class="card">
+      ${ev.image_url?`<img src="${esc(ev.image_url)}" style="width:100%;height:150px;object-fit:cover;border-radius:12px;margin-bottom:12px;" onerror="this.style.display='none'">`: ''}
+      <div class="card-name">${esc(ev.name)}</div>
+      <div class="card-meta">${esc(dateStr)}${ev.start_time?' · '+String(ev.start_time).slice(0,5):''}</div>
+      <div>
+        <span class="badge ${ev.is_recurring?'b-recurring':'b-special'}">${ev.is_recurring?'🔁 Recurring':'⚡ Special'}</span>
+        <span class="badge ${ev.sold_out?'b-sold':'b-ok'}">${ev.sold_out?'Sold Out':'Available'}</span>
+        ${!ev.active?'<span class="badge b-hidden">Hidden</span>':''}
+      </div>
+      ${ev.description?`<p style="font-size:12px;color:var(--soul-3);margin:10px 0 0;line-height:1.5;">${esc(ev.description)}</p>`:''}
+      ${tix.length?`<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">${tix.map(t=>`<div style="background:var(--night-3);border:1px solid var(--glass-border);border-radius:10px;padding:8px 12px;"><div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--soul-3);">${esc(t.label)}</div><div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;color:var(--ember-glow);">${t.free?'FREE':'R'+t.price}</div></div>`).join('')}</div>`:''}
+      <div class="card-actions">
+        <button class="act-btn act-edit" onclick="openEventModal('${ev.id}')">
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
+        </button>
+        <button class="act-btn" onclick="toggleSoldOut('${ev.id}',${ev.sold_out})"
+          style="color:${ev.sold_out?'var(--success)':'var(--warning)'};border-color:${ev.sold_out?'rgba(76,175,80,0.3)':'rgba(245,166,35,0.3)'}">
+          ${ev.sold_out?'Mark Available':'Mark Sold Out'}
+        </button>
+        <button class="act-btn act-del" onclick="deleteEvent('${ev.id}')">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M9 6V4h6v2"/></svg>Delete
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function toggleSoldOut(id,cur){
+  sync(true);
+  const {error}=await sb.from('events').update({sold_out:!cur,updated_at:new Date().toISOString()}).eq('id',id);
+  sync(false,!!error);
+  if(error){toast('Update failed',true);return;}
+  toast(!cur?'Marked sold out ✓':'Marked available ✓');
+  loadEvents(); loadTickets();
+}
+
+async function deleteEvent(id){
+  confirm_('Delete Event','This permanently removes the event from the live website.',async()=>{
+    sync(true);
+    const {error}=await sb.from('events').delete().eq('id',id);
+    sync(false,!!error);
+    if(error){toast('Delete failed',true);return;}
+    toast('Event deleted'); loadEvents(); loadTickets();
+  });
+}
+
+function addTicketRow(data){
+  ttc++;
+  const el=document.createElement('div');
+  el.className='ticket-item'; el.id='tt'+ttc;
+  el.innerHTML=`<button class="rm-ticket" onclick="document.getElementById('tt${ttc}').remove()">×</button>
+    <div class="ticket-grid">
+      <div class="form-group"><label class="form-label">Label</label><input type="text" class="tt-lbl" placeholder="e.g. General" value="${esc((data&&data.label)||'')}"></div>
+      <div class="form-group"><label class="form-label">Price (R)</label><input type="number" class="tt-price" placeholder="0" min="0" value="${(data&&!data.free)?data.price:''}"></div>
+    </div>
+    <div style="margin-top:10px;display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="this.querySelector('input').click()">
+      <label class="toggle" style="pointer-events:none;"><input type="checkbox" class="tt-free" ${(data&&data.free)?'checked':''}><div class="toggle-track"></div></label>
+      <span style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--soul-3);">Free entry</span>
+    </div>`;
+  document.getElementById('ticket-builder').appendChild(el);
+}
+
+function getTickets(){ return Array.from(document.querySelectorAll('.ticket-item')).map(el=>({label:el.querySelector('.tt-lbl').value.trim(),price:parseFloat(el.querySelector('.tt-price').value)||0,free:el.querySelector('.tt-free').checked})).filter(t=>t.label); }
+
+function openEventModal(id){
+  document.getElementById('ev-modal-title').textContent=id?'Edit Event':'New Event';
+  document.getElementById('ev-id').value=id||'';
+  document.getElementById('ticket-builder').innerHTML=''; ttc=0;
+  if(!id){
+    ['ev-name','ev-subtitle','ev-desc','ev-poster','ev-date','ev-time','ev-total'].forEach(f=>document.getElementById(f).value='');
+    document.getElementById('ev-type').value='false';
+    document.getElementById('ev-recday').value='';
+    document.getElementById('ev-soldout').value='false';
+    document.getElementById('ev-active').checked=true;
+    document.getElementById('event-modal').classList.add('open'); return;
+  }
+  sb.from('events').select('*').eq('id',id).single().then(({data,error})=>{
+    if(error||!data){toast('Load failed',true);return;}
+    document.getElementById('ev-name').value=data.name||'';
+    document.getElementById('ev-subtitle').value=data.subtitle||'';
+    document.getElementById('ev-desc').value=data.description||'';
+    document.getElementById('ev-poster').value=data.image_url||'';
+    document.getElementById('ev-date').value=data.event_date||'';
+    document.getElementById('ev-time').value=data.start_time?String(data.start_time).slice(0,5):'';
+    document.getElementById('ev-type').value=String(data.is_recurring);
+    document.getElementById('ev-recday').value=data.recurring_day||'';
+    document.getElementById('ev-total').value=data.total_tickets||0;
+    document.getElementById('ev-soldout').value=String(data.sold_out);
+    document.getElementById('ev-active').checked=data.active!==false;
+    if(Array.isArray(data.tickets)) data.tickets.forEach(t=>addTicketRow(t));
+    document.getElementById('event-modal').classList.add('open');
+  });
+}
+function closeEventModal(){ document.getElementById('event-modal').classList.remove('open'); }
+
+async function saveEvent(){
+  const name=document.getElementById('ev-name').value.trim();
+  if(!name){toast('Please enter an event name');return;}
+  const btn=document.getElementById('ev-save-btn');
+  btn.disabled=true; btn.textContent='Saving...';
+  const id=document.getElementById('ev-id').value;
+  const payload={
+    name,
+    subtitle:document.getElementById('ev-subtitle').value.trim()||'',
+    description:document.getElementById('ev-desc').value.trim()||'',
+    image_url:document.getElementById('ev-poster').value.trim()||'',
+    event_date:document.getElementById('ev-date').value||null,
+    start_time:document.getElementById('ev-time').value||null,
+    is_recurring:document.getElementById('ev-type').value==='true',
+    recurring_day:document.getElementById('ev-recday').value||'',
+    total_tickets:parseInt(document.getElementById('ev-total').value)||0,
+    sold_out:document.getElementById('ev-soldout').value==='true',
+    active:document.getElementById('ev-active').checked,
+    tickets:getTickets(),
+    updated_at:new Date().toISOString()
+  };
+  sync(true);
+  const {error}=id ? await sb.from('events').update(payload).eq('id',id) : await sb.from('events').insert({...payload,sold_tickets:0});
+  sync(false,!!error);
+  btn.disabled=false; btn.textContent='Save Event';
+  if(error){toast('Save failed: '+error.message,true);return;}
+  closeEventModal(); toast(id?'Event updated ✓':'Event added ✓'); loadEvents(); loadTickets();
+}
+
+// ══════════════════════════════════════════════════════════
+//  ANNOUNCEMENTS
+// ══════════════════════════════════════════════════════════
+async function loadAnnouncement(){
+  const {data}=await sb.from('announcements').select('*').order('created_at',{ascending:false});
+  const active=data?data.find(a=>a.active):null;
+  annActiveId=active?active.id:null;
+  document.getElementById('ann-toggle').checked=!!active;
+  document.getElementById('ann-msg').value=active?active.message:'';
+  updateAnnPreview();
+  const hist=document.getElementById('ann-history');
+  const old=(data||[]).filter(a=>!a.active);
+  hist.innerHTML=old.length?`<div class="eyebrow" style="margin-bottom:10px;">Past Banners</div>`+old.map(a=>`
+    <div class="card" style="padding:14px;">
+      <p style="font-size:13px;color:var(--soul-3);margin-bottom:10px;">${esc(a.message)}</p>
+      <button onclick="reactivateAnn('${a.id}')" style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;color:var(--ember-glow);padding:6px 12px;border-radius:8px;border:1px solid rgba(242,100,25,0.3);background:transparent;cursor:pointer;letter-spacing:1px;text-transform:uppercase;margin-right:6px;">Reactivate</button>
+      <button onclick="deleteAnn('${a.id}')" style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;color:var(--danger);padding:6px 12px;border-radius:8px;border:1px solid rgba(255,68,68,0.25);background:transparent;cursor:pointer;letter-spacing:1px;text-transform:uppercase;">Delete</button>
+    </div>`).join(''):'';
+}
+
+function updateAnnPreview(){
+  const msg=document.getElementById('ann-msg').value.trim();
+  document.getElementById('ann-preview-text').textContent=msg;
+  document.getElementById('ann-preview').classList.toggle('show',!!msg);
+}
+
+async function saveAnnouncement(){
+  const message=document.getElementById('ann-msg').value.trim();
+  const active=document.getElementById('ann-toggle').checked;
+  sync(true);
+  await sb.from('announcements').update({active:false}).neq('id','00000000-0000-0000-0000-000000000000');
+  if(message){
+    if(annActiveId) await sb.from('announcements').update({message,active}).eq('id',annActiveId);
+    else await sb.from('announcements').insert({message,active});
+  }
+  sync(false);
+  toast(active&&message?'Banner is live ✓':'Banner saved');
+  loadAnnouncement();
+}
+
+async function reactivateAnn(id){
+  sync(true);
+  await sb.from('announcements').update({active:false}).neq('id',id);
+  await sb.from('announcements').update({active:true}).eq('id',id);
+  sync(false); toast('Banner reactivated ✓'); loadAnnouncement();
+}
+async function deleteAnn(id){
+  sync(true); await sb.from('announcements').delete().eq('id',id); sync(false); loadAnnouncement();
+}
+
+// ══════════════════════════════════════════════════════════
+//  TRADING HOURS
+// ══════════════════════════════════════════════════════════
+async function loadHours(){
+  const {data,error}=await sb.from('trading_hours').select('*').order('day_order');
+  if(error){toast('Failed to load hours',true);return;}
+  hoursData=data||[];
+  document.getElementById('hours-table').innerHTML=hoursData.map(h=>`
+    <div class="hday" id="hday-${h.id}">
+      <div class="hday-name">${esc(h.day_name)}</div>
+      <div class="hday-inputs" id="hinp-${h.id}" style="${h.is_closed?'opacity:0.4;pointer-events:none;':''}">
+        <input type="time" id="ho-${h.id}" value="${(h.open_time||'').slice(0,5)}" style="width:100px;">
+        <span class="hday-sep">to</span>
+        <input type="time" id="hc-${h.id}" value="${(h.close_time||'').slice(0,5)}" style="width:100px;">
+      </div>
+      ${h.is_closed?'<span class="closed-badge">Closed</span>':'<span style="width:56px;display:inline-block;"></span>'}
+      <label class="toggle" style="margin-left:auto;">
+        <input type="checkbox" id="hx-${h.id}" ${h.is_closed?'checked':''} onchange="onClosedChange('${h.id}',this.checked)">
+        <div class="toggle-track"></div>
+      </label>
+    </div>`).join('');
+}
+
+function onClosedChange(id,closed){
+  const inp=document.getElementById('hinp-'+id);
+  inp.style.opacity=closed?'0.4':'1';
+  inp.style.pointerEvents=closed?'none':'auto';
+}
+
+async function saveHours(){
+  sync(true);
+  const results=await Promise.all(hoursData.map(h=>sb.from('trading_hours').update({
+    open_time:document.getElementById('ho-'+h.id)?.value||null,
+    close_time:document.getElementById('hc-'+h.id)?.value||null,
+    is_closed:document.getElementById('hx-'+h.id)?.checked||false
+  }).eq('id',h.id)));
+  const failed=results.some(r=>r.error);
+  sync(false,failed);
+  if(failed){toast('Some days failed to save',true);return;}
+  toast('Trading hours saved ✓'); loadHours();
+}
+
+// ══════════════════════════════════════════════════════════
+//  TICKET AVAILABILITY
+// ══════════════════════════════════════════════════════════
+async function loadTickets(){
+  spin('tickets-list');
+  const {data,error}=await sb.from('events').select('id,name,event_date,start_time,recurring_day,is_recurring,tickets,total_tickets,sold_tickets,sold_out').order('created_at',{ascending:false});
+  if(error){toast('Failed to load',true);return;}
+  const withTix=(data||[]).filter(ev=>ev.total_tickets>0||(Array.isArray(ev.tickets)&&ev.tickets.length>0));
+  const el=document.getElementById('tickets-list');
+  if(!withTix.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">🎟️</div><div class="empty-title">No ticketed events</div><div class="empty-sub">Add events with ticket types to manage availability here</div></div>`;
+    return;
+  }
+  el.innerHTML=withTix.map(ev=>{
+    const sold=ev.sold_tickets||0, total=ev.total_tickets||0, rem=total-sold;
+    const pct=total>0?(sold/total)*100:0;
+    const barCol=pct>=90?'var(--danger)':pct>=70?'var(--warning)':'var(--ember-glow)';
+    const dateStr=ev.event_date?new Date(ev.event_date+'T00:00:00').toLocaleDateString('en-ZA',{day:'numeric',month:'short'}):(ev.recurring_day||'TBC');
+    const tix=Array.isArray(ev.tickets)?ev.tickets:[];
+    return `<div class="ta-card">
+      <div class="ta-event-name">${esc(ev.name)}</div>
+      <div class="ta-event-sub">${esc(dateStr)}${ev.start_time?' · '+String(ev.start_time).slice(0,5):''}</div>
+      ${total>0?`<div class="ta-ticket">
+        <div class="ta-head"><div class="ta-name">Total Capacity</div><div class="ta-price">${total} tickets</div></div>
+        <div class="ta-bar-wrap"><div class="ta-bar" style="width:${pct}%;background:${barCol};"></div></div>
+        <div class="ta-stats"><span>${sold} sold</span><span>${rem} remaining</span></div>
+        <div class="ta-override">
+          <input type="number" id="ov-${ev.id}" placeholder="Override sold count" min="0" max="${total}" value="${sold}">
+          <button class="ta-override-btn" onclick="applyOverride('${ev.id}')">Apply</button>
+        </div>
+      </div>`:''}
+      ${tix.map(t=>`<div class="ta-ticket"><div class="ta-head"><div class="ta-name">${esc(t.label)}</div><div class="ta-price">${t.free?'FREE':'R'+t.price}</div></div></div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+async function applyOverride(evId){
+  const val=parseInt(document.getElementById('ov-'+evId)?.value);
+  if(isNaN(val)||val<0){toast('Invalid number',true);return;}
+  sync(true);
+  const {error}=await sb.from('events').update({sold_tickets:val,updated_at:new Date().toISOString()}).eq('id',evId);
+  sync(false,!!error);
+  if(error){toast('Update failed',true);return;}
+  toast('Ticket count updated ✓'); loadTickets();
+}
+
+// ══════════════════════════════════════════════════════════
+//  ORDERS
+// ══════════════════════════════════════════════════════════
+async function loadOrders(){
+  spin('orders-list');
+  const {data,error}=await sb.from('orders').select('*').order('created_at',{ascending:false}).limit(60);
+  if(error){toast('Failed to load orders',true);return;}
+  renderOrders(data||[]);
+}
+
+function renderOrders(data){
+  const el=document.getElementById('orders-list');
+  if(!data||!data.length){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">🧾</div><div class="empty-title">No orders yet</div><div class="empty-sub">Orders appear here as customers place them</div></div>`;
+    return;
+  }
+  el.innerHTML=data.map(o=>{
+    const items=Array.isArray(o.items)?o.items:[];
+    const st=o.status||'pending';
+    return `<div class="order-card">
+      <div class="order-id">Order #${String(o.id||'').slice(-8).toUpperCase()}</div>
+      <div class="order-name">${esc(o.customer_name||'Customer')}</div>
+      <div class="order-amount">R${Number(o.amount||0).toFixed(0)}</div>
+      ${o.customer_phone?`<div style="font-size:12px;color:var(--soul-3);margin-top:4px;">📞 ${esc(o.customer_phone)}</div>`:''}
+      ${o.collect_at?`<div style="font-size:12px;color:var(--soul-3);">🕐 Collect at: ${esc(o.collect_at)}</div>`:''}
+      ${items.length?`<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--glass-border);">
+        ${items.map(i=>`<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--soul-3);padding:2px 0;">${esc(i.name||'')} ×${i.qty||1}<span style="color:var(--ember-glow);">R${(i.price||0)*(i.qty||1)}</span></div>`).join('')}
+      </div>`:''}
+      ${o.instructions?`<div style="font-size:12px;color:var(--soul-3);margin-top:8px;padding:8px;background:var(--night-3);border-radius:8px;">📝 ${esc(o.instructions)}</div>`:''}
+      <div><span class="status-badge s-${st}">${st}</span></div>
+      ${st==='paid'?`<button class="collect-btn" onclick="markCollected('${o.id}')">✓ Mark as Collected</button>`:''}
+    </div>`;
+  }).join('');
+}
+
+async function markCollected(id){
+  sync(true);
+  const {error}=await sb.from('orders').update({status:'collected',is_collected:true,collected_at:new Date().toISOString()}).eq('id',id);
+  sync(false,!!error);
+  if(error){toast('Update failed',true);return;}
+  toast('Marked as collected ✓'); loadOrders();
+}
+
+async function clearCollected(){
+  const {data}=await sb.from('orders').select('*').neq('status','collected').order('created_at',{ascending:false}).limit(60);
+  renderOrders(data||[]);
+  toast('Collected orders hidden');
+}
+
+// close modals on backdrop click
+['menu-modal','event-modal'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+});
+</script>
+</body>
+</html>

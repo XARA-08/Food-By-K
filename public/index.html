@@ -5,12 +5,12 @@
   <!-- SECURITY: Content Security Policy -->
   <meta http-equiv="Content-Security-Policy" content="
     default-src 'self';
-    script-src 'self' 'unsafe-inline' https://www.instagram.com https://fonts.googleapis.com;
+    script-src 'self' 'unsafe-inline' https://www.instagram.com https://fonts.googleapis.com https://cdn.jsdelivr.net;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com;
     img-src 'self' data: https://images.unsplash.com https://www.instagram.com https://cdnjs.cloudflare.com;
     font-src 'self' https://fonts.gstatic.com;
     frame-src https://www.instagram.com https://www.google.com https://www.payfast.co.za;
-    connect-src 'self' https://www.payfast.co.za;
+    connect-src 'self' https://www.payfast.co.za https://cuzqkwznwsuhjnwqqrix.supabase.co https://cdn.jsdelivr.net;
     form-action https://www.payfast.co.za 'self';
     base-uri 'self';
     upgrade-insecure-requests;
@@ -1352,23 +1352,7 @@ if(sessionStorage.getItem("a")==="1")document.getElementById("g").remove();
      OWNER DASHBOARD — Hidden from customers
      Access: tap logo 5 times on home page
 ============================================================ -->
-<div id="page-dashboard" class="page" style="display:none;">
-  <div class="page-topbar">
-    <svg class="topbar-logo" color="var(--ember-glow)" onclick="handleLogoTap()" style="cursor:pointer;"><use href="#fbk-logo"/></svg>
-    <span class="topbar-title" style="color:var(--ember-glow);">Orders</span>
-    <button onclick="clearOldOrders()" style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:600;color:var(--soul-3);padding:6px 10px;border-radius:8px;border:1px solid var(--glass-border);background:transparent;letter-spacing:0.5px;">Clear Done</button>
-  </div>
-  <div style="padding:20px;">
-    <p class="eyebrow">Kitchen View</p>
-    <h2 class="display-title" style="font-size:36px;margin-bottom:4px;">Live Orders</h2>
-    <p style="font-size:12px;color:var(--soul-3);margin-bottom:20px;">Tap an order to mark as collected</p>
-    <div id="dashboard-orders" style="display:flex;flex-direction:column;gap:12px;"></div>
-    <div id="dashboard-empty" style="text-align:center;padding:40px 0;">
-      <p style="font-family:'Cormorant Garamond',serif;font-size:24px;color:var(--soul-3);">No pending orders</p>
-      <p style="font-size:13px;color:var(--soul-3);margin-top:8px;">Orders will appear here as customers place them</p>
-    </div>
-  </div>
-</div>
+
 
 <!-- Bottom Nav -->
 <nav class="bottom-nav">
@@ -1789,111 +1773,24 @@ let logoTaps = 0, logoTimer = null;
 
 // Secret: tap logo 5 times to open dashboard
 function handleLogoTap(){
-  logoTaps++;
-  clearTimeout(logoTimer);
-  logoTimer = setTimeout(()=>logoTaps=0, 2000);
-  if(logoTaps >= 5){
-    logoTaps=0;
-    const pw = prompt('Owner access code:');
-    if(pw === 'FoodByK2025'){
-      showDashboard();
-    }
+  window._lt=(window._lt||0)+1;
+  clearTimeout(window._ltimer);
+  window._ltimer=setTimeout(function(){window._lt=0;},2000);
+  if(window._lt>=5){window._lt=0;window.location.href='/admin.html';}
+}
   }
 }
 
-function showDashboard(){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('page-dashboard').classList.add('active');
-  document.getElementById('page-dashboard').style.display='block';
-  renderDashboard();
-}
 
-function renderDashboard(){
-  const orders = JSON.parse(localStorage.getItem('fbk_orders')||'[]');
-  const pending = orders.filter(o=>o.status!=='collected');
-  const container = document.getElementById('dashboard-orders');
-  const empty = document.getElementById('dashboard-empty');
 
-  if(pending.length===0){
-    container.style.display='none';
-    empty.style.display='block';
-    return;
-  }
-  empty.style.display='none';
-  container.style.display='flex';
 
-  container.innerHTML = pending.map((order,i)=>`
-    <div style="
-      background:var(--glass-bg);backdrop-filter:blur(16px);
-      border:1px solid var(--glass-border);border-radius:18px;
-      overflow:hidden;
-    ">
-      <!-- Order header -->
-      <div style="
-        background:linear-gradient(135deg,var(--ember-deep),var(--ember));
-        padding:14px 16px;
-        display:flex;justify-content:space-between;align-items:center;
-      ">
-        <div>
-          <div style="font-family:'Montserrat',sans-serif;font-weight:800;font-size:16px;color:white;">${sanitize(order.name)}</div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.7);margin-top:2px;">${sanitize(order.phone)}</div>
-        </div>
-        <div style="text-align:right;">
-          <div style="font-family:'Montserrat',sans-serif;font-size:22px;font-weight:800;color:white;">R${order.total}</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.8);letter-spacing:1px;">COLLECT ${sanitize(order.collectAt)}</div>
-        </div>
-      </div>
-      <!-- Order items -->
-      <div style="padding:14px 16px;">
-        ${order.items.map(item=>`
-          <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--soul);padding:4px 0;border-bottom:1px solid rgba(245,236,215,0.06);">
-            <span>${sanitize(item.name)} <span style="color:var(--soul-3);">×${item.qty}</span></span>
-            <span style="font-weight:700;color:var(--ember-glow);">R${item.price*item.qty}</span>
-          </div>`).join('')}
-        ${order.instructions ? `<div style="margin-top:10px;padding:10px;background:rgba(217,79,0,0.08);border-radius:10px;font-size:12px;color:var(--soul-3);font-style:italic;">"${sanitize(order.instructions)}"</div>` : ''}
-      </div>
-      <!-- Order footer -->
-      <div style="padding:0 16px 14px;display:flex;gap:8px;align-items:center;">
-        <div style="flex:1;font-family:'Montserrat',sans-serif;font-size:9px;color:var(--soul-3);letter-spacing:1px;">${sanitize(order.id)}</div>
-        <button onclick="markCollected('${order.id}')" style="
-          padding:10px 18px;border-radius:10px;
-          background:var(--ember);color:white;border:none;
-          font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;
-          letter-spacing:1px;text-transform:uppercase;cursor:pointer;
-        ">Mark Collected</button>
-      </div>
-    </div>
-  `).join('');
-}
 
-function markCollected(orderId){
-  const orders = JSON.parse(localStorage.getItem('fbk_orders')||'[]');
-  const idx = orders.findIndex(o=>o.id===orderId);
-  if(idx>=0){
-    orders[idx].status='collected';
-    localStorage.setItem('fbk_orders',JSON.stringify(orders));
-    renderDashboard();
-    showToast('Order marked as collected');
-  }
-}
-
-function clearOldOrders(){
-  const orders = JSON.parse(localStorage.getItem('fbk_orders')||'[]');
-  const active = orders.filter(o=>o.status!=='collected');
-  localStorage.setItem('fbk_orders',JSON.stringify(active));
-  renderDashboard();
-}
-
-// Refresh dashboard every 30 seconds
-setInterval(()=>{
-  if(document.getElementById('page-dashboard').classList.contains('active')){
-    renderDashboard();
-  }
-},30000);
 
 // Process IG on load
 window.addEventListener('load',()=>setTimeout(processIG,1000));
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/patch.js"></script>
 </body>
 </html>
