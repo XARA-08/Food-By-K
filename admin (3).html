@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<!-- SECURITY: No-index, no-cache for admin panel -->
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<title>Food By K — Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@700&family=Montserrat:wght@400;600;700;800&family=Lato:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --e:#D94F00;--eg:#F26419;--ed:#B03E00;
+  --n:#0C0B09;--n2:#161310;--n3:#1F1A15;--n4:#2A2218;
+  --s:#F2E8D9;--s3:#A08060;--w:#FFFFFF;
+  --gb:rgba(30,24,18,0.8);--gbr:rgba(242,100,25,0.2);
+  --ok:#4CAF50;--err:#FF4444;--warn:#F5A623;
+  --sp:cubic-bezier(0.34,1.56,0.64,1);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--n);color:var(--s);font-family:'Lato',sans-serif;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+
+/* LOCK */
+#lock{position:fixed;inset:0;z-index:9999;background:var(--n);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;}
+.ll{font-family:'Cormorant Garamond',serif;font-size:40px;font-weight:700;color:var(--w);}
+.ll span{color:var(--eg);font-style:italic;}
+.ls{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:var(--s3);margin:4px 0 40px;}
+.lc{width:100%;max-width:340px;background:var(--gb);border:1px solid var(--gbr);border-radius:20px;padding:28px;}
+.lc label{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--s3);display:block;margin-bottom:8px;}
+#pin-email{width:100%;background:var(--n3);border:1px solid var(--gbr);border-radius:10px;padding:13px 15px;color:var(--s);font-size:15px;outline:none;margin-bottom:12px;}
+#pin-email:focus{border-color:var(--eg);}
+#pin{width:100%;background:var(--n3);border:1px solid var(--gbr);border-radius:10px;padding:13px 15px;color:var(--s);font-size:16px;letter-spacing:3px;outline:none;}
+#pin:focus{border-color:var(--eg);}
+#pin-err{font-family:'Montserrat',sans-serif;font-size:10px;color:var(--err);min-height:18px;margin-top:6px;font-weight:600;}
+.lbtn{width:100%;margin-top:16px;background:var(--e);color:white;padding:15px;border-radius:12px;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;border:none;cursor:pointer;}
+.lbtn:active{transform:scale(0.97);background:var(--ed);}
+.lbtn:disabled{opacity:.5;cursor:not-allowed;}
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-8px);}75%{transform:translateX(8px);}50%{transform:translateX(-4px);}75%{transform:translateX(8px);}}
+.shake{animation:shake .4s ease;}
+
+/* APP */
+#app{display:none;min-height:100svh;}
+
+/* TOPBAR */
+.tb{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:rgba(12,11,9,0.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--gbr);}
+.tb-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--eg);}
+.tb-sub{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--s3);}
+.sync{width:7px;height:7px;border-radius:50%;background:var(--ok);}
+.sync.busy{background:var(--warn);animation:pulse 1s infinite;}
+.sync.bad{background:var(--err);}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.lo{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--s3);padding:6px 11px;border-radius:7px;border:1px solid var(--gbr);background:none;cursor:pointer;}
+
+/* TABS */
+.tabs{display:flex;overflow-x:auto;scrollbar-width:none;background:var(--n2);border-bottom:1px solid var(--gbr);padding:0 6px;position:sticky;top:57px;z-index:99;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{flex-shrink:0;padding:13px 15px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--s3);cursor:pointer;border-bottom:2.5px solid transparent;white-space:nowrap;user-select:none;transition:color .15s,border-color .15s;}
+.tab.on{color:var(--eg);border-bottom-color:var(--eg);}
+
+/* SECTIONS */
+.sec{display:none;padding:18px;padding-bottom:80px;}
+.sec.on{display:block;}
+.ey{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:var(--eg);margin-bottom:3px;}
+.st{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:700;color:var(--w);line-height:1;}
+.sd{font-size:12px;color:var(--s3);margin:5px 0 18px;}
+
+/* CARD */
+.card{background:var(--gb);border:1px solid var(--gbr);border-radius:16px;padding:16px;margin-bottom:11px;position:relative;overflow:hidden;}
+.cn{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:700;color:var(--w);margin-bottom:2px;}
+.cp{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:700;color:var(--eg);}
+.cm{font-size:11px;color:var(--s3);margin-bottom:7px;}
+.badge{display:inline-flex;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:3px 8px;border-radius:5px;margin-right:4px;margin-top:3px;}
+.b-ok{background:rgba(76,175,80,.12);color:var(--ok);border:1px solid rgba(76,175,80,.3);}
+.b-err{background:rgba(255,68,68,.12);color:var(--err);border:1px solid rgba(255,68,68,.3);}
+.b-sp{background:var(--e);color:white;}
+.b-rc{background:var(--n4);color:#D9C9B0;border:1px solid var(--gbr);}
+.b-hid{background:var(--n4);color:var(--s3);border:1px solid var(--gbr);}
+.ca{display:flex;gap:7px;margin-top:12px;padding-top:12px;border-top:1px solid var(--gbr);}
+.ab{flex:1;padding:9px;border-radius:9px;border:1px solid var(--gbr);background:none;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;color:var(--s3);}
+.ab svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;}
+.ab-e{border-color:rgba(242,100,25,.3);color:var(--eg);}
+.ab-d{border-color:rgba(255,68,68,.25);color:var(--err);}
+.ab:active{transform:scale(.97);}
+
+/* ADD BUTTON */
+.addbtn{display:flex;align-items:center;gap:7px;background:var(--e);color:white;padding:12px 18px;border-radius:12px;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;border:none;cursor:pointer;margin-bottom:18px;}
+.addbtn:active{transform:scale(.97);background:var(--ed);}
+
+/* FORM */
+.fg{margin-bottom:16px;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+.fl{display:block;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--s3);margin-bottom:7px;}
+input,textarea,select{width:100%;background:var(--n3);border:1px solid var(--gbr);border-radius:10px;padding:12px 14px;color:var(--s);font-family:'Lato',sans-serif;font-size:14px;outline:none;-webkit-appearance:none;}
+input:focus,textarea:focus,select:focus{border-color:var(--eg);}
+textarea{resize:vertical;min-height:76px;line-height:1.5;}
+select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23A08060' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:34px;}
+select option{background:var(--n3);}
+
+/* TOGGLE */
+.tr{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--gbr);}
+.tr:last-child{border-bottom:none;}
+.tl{font-size:13px;color:var(--s);}
+.ts{font-size:11px;color:var(--s3);margin-top:1px;}
+.tog{position:relative;width:44px;height:24px;flex-shrink:0;}
+.tog input{opacity:0;width:0;height:0;}
+.tog-t{position:absolute;inset:0;border-radius:12px;background:var(--n4);border:1px solid var(--gbr);cursor:pointer;transition:all .25s;}
+.tog input:checked+.tog-t{background:var(--e);border-color:var(--e);}
+.tog-t::after{content:'';position:absolute;left:3px;top:50%;transform:translateY(-50%);width:16px;height:16px;border-radius:50%;background:var(--s3);transition:all .25s var(--sp);}
+.tog input:checked+.tog-t::after{left:23px;background:white;}
+
+/* MODAL */
+.mo{position:fixed;inset:0;background:rgba(12,11,9,.87);backdrop-filter:blur(8px);z-index:500;display:none;align-items:flex-end;}
+.mo.on{display:flex;}
+.md{width:100%;max-height:93svh;overflow-y:auto;background:var(--n2);border-top:1px solid var(--gbr);border-radius:22px 22px 0 0;}
+.mh-bar{width:34px;height:4px;border-radius:2px;background:var(--n4);margin:11px auto 0;}
+.mh{padding:18px 22px 14px;border-bottom:1px solid var(--gbr);}
+.mt{font-family:'Cormorant Garamond',serif;font-size:25px;font-weight:700;color:var(--w);}
+.mb{padding:22px;}
+.mf{padding:14px 22px 26px;border-top:1px solid var(--gbr);display:flex;gap:9px;}
+.btn-p{flex:1;background:var(--e);color:white;padding:14px;border-radius:12px;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;border:none;cursor:pointer;}
+.btn-p:active{transform:scale(.97);}
+.btn-p:disabled{opacity:.5;}
+.btn-g{padding:14px 18px;border-radius:12px;border:1px solid var(--gbr);background:none;color:var(--s3);font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;}
+
+/* HOURS */
+.hd{background:var(--gb);border:1px solid var(--gbr);border-radius:13px;padding:13px 15px;display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:5px;}
+.hn{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--s);width:76px;flex-shrink:0;}
+.hi{display:flex;align-items:center;gap:7px;flex:1;}
+.hi input{flex:1;padding:7px 9px;font-size:13px;min-width:0;border-radius:8px;}
+
+/* ANNOUNCE */
+.ac{background:var(--gb);border:1px solid var(--gbr);border-radius:18px;padding:22px;}
+.ap{margin-top:14px;padding:13px 16px;border-radius:10px;background:rgba(242,100,25,.1);border:1px solid rgba(242,100,25,.22);font-size:13px;line-height:1.5;display:none;}
+.ap.on{display:block;}
+.apl{font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--eg);margin-bottom:5px;}
+
+/* TICKET */
+.tc{background:var(--gb);border:1px solid var(--gbr);border-radius:16px;padding:16px;margin-bottom:11px;}
+.ten{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:700;color:var(--w);margin-bottom:2px;}
+.tes{font-size:11px;color:var(--s3);margin-bottom:12px;}
+.tt{background:var(--n3);border:1px solid var(--gbr);border-radius:11px;padding:11px 13px;margin-bottom:7px;}
+.tth{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;}
+.ttn{font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--s3);}
+.ttp{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:700;color:var(--eg);}
+.tbw{height:5px;background:var(--n4);border-radius:3px;overflow:hidden;margin-bottom:5px;}
+.tbl{height:100%;border-radius:3px;background:var(--eg);}
+.tbs{display:flex;justify-content:space-between;font-size:10px;color:var(--s3);font-family:'Montserrat',sans-serif;margin-bottom:9px;}
+.tov{display:flex;gap:7px;align-items:center;}
+.tov input{flex:1;padding:7px 9px;font-size:13px;border-radius:8px;}
+.tovb{padding:7px 13px;border-radius:8px;background:var(--e);color:white;border:none;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;white-space:nowrap;}
+
+/* ORDERS */
+.oc{background:var(--gb);border:1px solid var(--gbr);border-radius:15px;padding:15px;margin-bottom:9px;}
+.oi{font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--s3);}
+.on2{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:700;color:var(--w);margin:2px 0;}
+.oa{color:var(--eg);font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:700;}
+.osb{display:inline-flex;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:3px 8px;border-radius:5px;margin-top:5px;}
+.s-pending{background:rgba(245,166,35,.12);color:var(--warn);border:1px solid rgba(245,166,35,.3);}
+.s-paid{background:rgba(76,175,80,.12);color:var(--ok);border:1px solid rgba(76,175,80,.3);}
+.s-collected{background:rgba(160,128,96,.12);color:var(--s3);border:1px solid var(--gbr);}
+.cob{width:100%;margin-top:11px;padding:11px;border-radius:11px;border:none;background:var(--e);color:white;font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;}
+.cob:active{transform:scale(.97);}
+
+/* TICKET BUILDER */
+.ti{background:var(--n3);border:1px solid var(--gbr);border-radius:11px;padding:13px;margin-bottom:7px;position:relative;}
+.tig{display:grid;grid-template-columns:1fr 85px;gap:7px;align-items:end;}
+.tig .fg{margin-bottom:0;}
+.tirm{position:absolute;top:9px;right:9px;width:22px;height:22px;border-radius:5px;background:rgba(255,68,68,.1);border:1px solid rgba(255,68,68,.2);color:var(--err);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.tiadd{display:flex;align-items:center;justify-content:center;gap:5px;padding:9px;border-radius:9px;border:1px dashed var(--gbr);background:none;color:var(--s3);font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;width:100%;}
+
+/* MISC */
+.empty{text-align:center;padding:44px 18px;}
+.ei{font-size:44px;margin-bottom:11px;}
+.et{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:var(--s3);margin-bottom:4px;}
+.es{font-size:12px;color:var(--s3);}
+.ld{display:flex;align-items:center;justify-content:center;padding:44px;}
+.sp{width:30px;height:30px;border:2px solid var(--gbr);border-top-color:var(--eg);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--e);color:white;padding:11px 22px;border-radius:28px;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;z-index:9999;opacity:0;pointer-events:none;transition:all .3s var(--sp);white-space:nowrap;}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast.e{background:var(--err);}
+.co{position:fixed;inset:0;background:rgba(12,11,9,.92);backdrop-filter:blur(8px);z-index:600;display:none;align-items:center;justify-content:center;padding:22px;}
+.co.on{display:flex;}
+.cb{background:var(--n2);border:1px solid var(--gbr);border-radius:18px;padding:26px;width:100%;max-width:300px;text-align:center;}
+.ct{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:var(--w);margin-bottom:7px;}
+.cm2{font-size:13px;color:var(--s3);margin-bottom:22px;line-height:1.5;}
+.cbs{display:flex;gap:9px;}
+.cy{flex:1;padding:12px;border-radius:11px;border:none;background:var(--err);color:white;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;}
+.cn2{flex:1;padding:12px;border-radius:11px;border:1px solid var(--gbr);background:none;color:var(--s3);font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;}
+</style>
+</head>
+<body>
+
+<div id="lock">
+  <div class="ll">Food By <span>K</span></div>
+  <div class="ls">Admin Panel</div>
+  <div class="lc">
+    <label for="pin-email">Email</label>
+    <input type="email" id="pin-email" placeholder="thatosfiso19@gmail.com" autocomplete="email" onkeydown="if(event.key==='Enter')document.getElementById('pin').focus()">
+    <label for="pin">Password</label>
+    <input type="password" id="pin" placeholder="••••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <div id="pin-err"></div>
+    <button class="lbtn" id="login-btn" onclick="doLogin()">Enter Admin</button>
+  </div>
+</div>
+
+<div id="app">
+  <div class="tb">
+    <div><div class="tb-title">Food By K</div><div class="tb-sub">Admin Panel</div></div>
+    <div style="display:flex;align-items:center;gap:9px;">
+      <span class="sync" id="sync"></span>
+      <button class="lo" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <div class="tab on" onclick="showTab('menu',this)">Menu</div>
+    <div class="tab" onclick="showTab('events',this)">Events</div>
+    <div class="tab" onclick="showTab('announcements',this)">Banner</div>
+    <div class="tab" onclick="showTab('hours',this)">Hours</div>
+    <div class="tab" onclick="showTab('tickets',this)">Tickets</div>
+    <div class="tab" onclick="showTab('orders',this)">Orders</div>
+  </div>
+
+  <!-- MENU -->
+  <div class="sec on" id="sec-menu">
+    <div class="ey">Manage</div><h1 class="st">Menu</h1>
+    <p class="sd">Changes go live on the site instantly</p>
+    <button class="addbtn" onclick="openMenuModal()">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg>
+      Add Item
+    </button>
+    <div id="menu-list"></div>
+  </div>
+
+  <!-- EVENTS -->
+  <div class="sec" id="sec-events">
+    <div class="ey">Manage</div><h1 class="st">Events</h1>
+    <p class="sd">Changes go live on the site instantly</p>
+    <button class="addbtn" onclick="openEventModal()">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg>
+      Add Event
+    </button>
+    <div id="events-list"></div>
+  </div>
+
+  <!-- BANNER -->
+  <div class="sec" id="sec-announcements">
+    <div class="ey">Manage</div><h1 class="st">Banner</h1>
+    <p class="sd">Shows a message at the top of the home page</p>
+    <div class="ac">
+      <div class="tr">
+        <div><div class="tl">Show Banner</div><div class="ts">Displays on the live website</div></div>
+        <label class="tog"><input type="checkbox" id="ann-tog"><div class="tog-t"></div></label>
+      </div>
+      <div class="fg" style="margin-top:16px;margin-bottom:0;">
+        <label class="fl" for="ann-msg">Message</label>
+        <textarea id="ann-msg" rows="3" placeholder="e.g. Kitchen closes early today at 4PM ⚡" oninput="updateAnnPrev()"></textarea>
+      </div>
+      <div id="ann-prev" class="ap"><div class="apl">Preview</div><div id="ann-prev-txt"></div></div>
+      <button class="btn-p" style="width:100%;margin-top:16px;" onclick="saveAnn()">Save Banner</button>
+    </div>
+    <div id="ann-hist" style="margin-top:18px;"></div>
+  </div>
+
+  <!-- HOURS -->
+  <div class="sec" id="sec-hours">
+    <div class="ey">Manage</div><h1 class="st">Trading Hours</h1>
+    <p class="sd">Set open/close times per day</p>
+    <div id="hours-table"></div>
+    <button class="btn-p" style="width:100%;margin-top:18px;" onclick="saveHours()">Save Hours</button>
+  </div>
+
+  <!-- TICKETS -->
+  <div class="sec" id="sec-tickets">
+    <div class="ey">Manage</div><h1 class="st">Ticket Availability</h1>
+    <p class="sd">Monitor sales and override counts</p>
+    <div id="tickets-list"></div>
+  </div>
+
+  <!-- ORDERS -->
+  <div class="sec" id="sec-orders">
+    <div class="ey">Live</div><h1 class="st">Orders</h1>
+    <p class="sd">Tap paid orders to mark as collected</p>
+    <div style="display:flex;gap:7px;margin-bottom:14px;">
+      <button onclick="loadOrders()" style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;color:var(--eg);padding:7px 13px;border-radius:7px;border:1px solid rgba(242,100,25,.3);background:none;cursor:pointer;letter-spacing:1px;text-transform:uppercase;">↻ Refresh</button>
+      <button onclick="clearCollected()" style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:600;color:var(--s3);padding:7px 13px;border-radius:7px;border:1px solid var(--gbr);background:none;cursor:pointer;letter-spacing:1px;text-transform:uppercase;">Clear Collected</button>
+    </div>
+    <div id="orders-list"></div>
+  </div>
+</div>
+
+<!-- MENU MODAL -->
+<div class="mo" id="menu-modal" onclick="if(event.target===this)closeModal('menu-modal')">
+  <div class="md">
+    <div class="mh-bar"></div>
+    <div class="mh"><div class="mt" id="mm-title">New Menu Item</div></div>
+    <div class="mb">
+      <input type="hidden" id="mi-id">
+      <div class="fg"><label class="fl">Item Name</label><input type="text" id="mi-name" placeholder="e.g. Regular Joe Kota"></div>
+      <div class="fg"><label class="fl">Description</label><textarea id="mi-desc" placeholder="What's in it?"></textarea></div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Price (R)</label><input type="number" id="mi-price" placeholder="0" min="0"></div>
+        <div class="fg"><label class="fl">Category</label>
+          <select id="mi-cat">
+            <option value="kota">Kota</option><option value="sandwiches">Sandwiches</option>
+            <option value="burgers">Burgers</option><option value="platters">Platters</option>
+            <option value="wraps">Wraps</option><option value="specialty">Specialty</option>
+            <option value="drinks">Drinks</option><option value="addons">Add-ons</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Photo URL</label><input type="url" id="mi-photo" placeholder="https://..."></div>
+      <div class="fg"><label class="fl">Display Order</label><input type="number" id="mi-order" placeholder="0" min="0"></div>
+      <div class="tr" style="padding-top:0;">
+        <div><div class="tl">Available Today</div><div class="ts">Toggle off = sold out</div></div>
+        <label class="tog"><input type="checkbox" id="mi-avail" checked><div class="tog-t"></div></label>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn-g" onclick="closeModal('menu-modal')">Cancel</button>
+      <button class="btn-p" id="mi-save" onclick="saveMenuItem()">Save Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- EVENT MODAL -->
+<div class="mo" id="event-modal" onclick="if(event.target===this)closeModal('event-modal')">
+  <div class="md">
+    <div class="mh-bar"></div>
+    <div class="mh"><div class="mt" id="em-title">New Event</div></div>
+    <div class="mb">
+      <input type="hidden" id="ei-id">
+      <div class="fg"><label class="fl">Event Name</label><input type="text" id="ei-name" placeholder="e.g. Kota Saturdayz"></div>
+      <div class="fg"><label class="fl">Subtitle</label><input type="text" id="ei-sub" placeholder="e.g. Every Saturday from 12PM"></div>
+      <div class="fg"><label class="fl">Description</label><textarea id="ei-desc" placeholder="Tell people what to expect..."></textarea></div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Date</label><input type="date" id="ei-date"></div>
+        <div class="fg"><label class="fl">Start Time</label><input type="time" id="ei-time"></div>
+      </div>
+      <div class="fg"><label class="fl">Poster URL</label><input type="url" id="ei-poster" placeholder="https://..."></div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Type</label>
+          <select id="ei-type"><option value="false">Special (countdown)</option><option value="true">Recurring</option></select>
+        </div>
+        <div class="fg"><label class="fl">Recurring Day</label>
+          <select id="ei-rday"><option value="">N/A</option><option>Monday</option><option>Tuesday</option><option>Wednesday</option><option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option></select>
+        </div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Total Tickets</label><input type="number" id="ei-total" placeholder="0" min="0"></div>
+        <div class="fg"><label class="fl">Status</label><select id="ei-sold"><option value="false">Available</option><option value="true">Sold Out</option></select></div>
+      </div>
+      <div class="fg">
+        <label class="fl">Ticket Types</label>
+        <div id="ticket-builder"></div>
+        <button class="tiadd" onclick="addTicket()">+ Add Ticket Type</button>
+      </div>
+      <div class="tr" style="padding-top:0;">
+        <div><div class="tl">Active</div><div class="ts">Show on website</div></div>
+        <label class="tog"><input type="checkbox" id="ei-active" checked><div class="tog-t"></div></label>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn-g" onclick="closeModal('event-modal')">Cancel</button>
+      <button class="btn-p" id="ei-save" onclick="saveEvent()">Save Event</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div class="co" id="confirm">
+  <div class="cb">
+    <div class="ct" id="conf-title">Delete?</div>
+    <div class="cm2" id="conf-msg">This cannot be undone.</div>
+    <div class="cbs">
+      <button class="cn2" onclick="closeConf()">Cancel</button>
+      <button class="cy" id="conf-yes">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   Food By K — Admin Panel (SECURED BUILD)
+   Authentication: Supabase Auth (email + password)
+   No hardcoded passwords. No client-side PIN bypass.
+   Session persists via Supabase JWT — verified server-side.
+   Failed attempts are rate-limited client-side (5 max).
+   ═══════════════════════════════════════════════════════════════ */
+
+const SB_URL = 'https://cuzqkwznwsuhjnwqqrix.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN1enFrd3pud3N1aGpud3Fxcml4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY1NTMxNTAsImV4cCI6MjA5MjEyOTE1MH0.Kwk23gVcmDMcCN2APdE8zX8i7hMZC606DVzZz5n9lZ0';
+
+const CATS = {kota:'Kota',sandwiches:'Sandwiches',burgers:'Burgers',platters:'Platters',wraps:'Wraps',specialty:'Specialty',drinks:'Drinks',addons:'Add-ons'};
+const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+let sb, hData = [], annId = null, ttc = 0;
+
+/* ── Brute-force protection (client-side, 5 attempts max) ── */
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MS   = 15 * 60 * 1000; // 15 minutes
+
+function getLoginState() {
+  try {
+    const raw = sessionStorage.getItem('_fbk_la');
+    return raw ? JSON.parse(raw) : { attempts: 0, lockedUntil: 0 };
+  } catch { return { attempts: 0, lockedUntil: 0 }; }
+}
+function setLoginState(s) {
+  try { sessionStorage.setItem('_fbk_la', JSON.stringify(s)); } catch {}
+}
+function recordFailedAttempt() {
+  const s = getLoginState();
+  s.attempts = (s.attempts || 0) + 1;
+  if (s.attempts >= MAX_ATTEMPTS) s.lockedUntil = Date.now() + LOCKOUT_MS;
+  setLoginState(s);
+  return s;
+}
+function clearLoginState() {
+  try { sessionStorage.removeItem('_fbk_la'); } catch {}
+}
+
+/* ── AUTH ─────────────────────────────────────────────────── */
+async function doLogin() {
+  const state = getLoginState();
+  if (state.lockedUntil && Date.now() < state.lockedUntil) {
+    const mins = Math.ceil((state.lockedUntil - Date.now()) / 60000);
+    document.getElementById('pin-err').textContent = `Too many attempts. Try again in ${mins} min.`;
+    return;
+  }
+
+  const email    = (document.getElementById('pin-email').value || '').trim();
+  const password = document.getElementById('pin').value;
+  const errEl    = document.getElementById('pin-err');
+  const btn      = document.getElementById('login-btn');
+
+  if (!email) { errEl.textContent = 'Please enter your email'; return; }
+  if (!password) { errEl.textContent = 'Please enter your password'; return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Verifying…';
+  errEl.textContent = '';
+
+  try {
+    sb = supabase.createClient(SB_URL, SB_KEY);
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+
+    if (error || !data.user) {
+      const s = recordFailedAttempt();
+      const remaining = MAX_ATTEMPTS - s.attempts;
+      const p = document.getElementById('pin');
+      errEl.textContent = remaining > 0
+        ? `Incorrect credentials (${remaining} attempt${remaining !== 1 ? 's' : ''} left)`
+        : 'Account locked for 15 minutes';
+      p.classList.add('shake');
+      p.value = '';
+      setTimeout(() => p.classList.remove('shake'), 500);
+      btn.disabled = false;
+      btn.textContent = 'Enter Admin';
+      return;
+    }
+
+    /* Success */
+    clearLoginState();
+    document.getElementById('lock').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+
+    /* Update last_login timestamp */
+    await sb.from('admin_profiles').update({ last_login: new Date().toISOString() }).eq('id', data.user.id);
+
+    initApp();
+
+  } catch (e) {
+    errEl.textContent = 'Connection error. Please retry.';
+    btn.disabled = false;
+    btn.textContent = 'Enter Admin';
+  }
+}
+
+async function doLogout() {
+  if (sb) {
+    try { await sb.auth.signOut(); } catch {}
+  }
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('lock').style.display = 'flex';
+  document.getElementById('pin-email').value = '';
+  document.getElementById('pin').value = '';
+  document.getElementById('pin-err').textContent = '';
+  document.getElementById('login-btn').disabled = false;
+  document.getElementById('login-btn').textContent = 'Enter Admin';
+}
+
+/* Check for existing session on page load */
+(async function checkSession() {
+  try {
+    const _sb = supabase.createClient(SB_URL, SB_KEY);
+    const { data: { session } } = await _sb.auth.getSession();
+    if (!session) return;
+
+    /* Valid session — skip login screen */
+    sb = _sb;
+    document.getElementById('lock').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    initApp();
+  } catch {}
+})();
+
+/* ── TAB SWITCHING ────────────────────────────────────────── */
+function showTab(id, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  document.querySelectorAll('.sec').forEach(s => s.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('sec-' + id).classList.add('on');
+  if (id === 'orders') loadOrders();
+  if (id === 'tickets') loadTickets();
+}
+
+/* ── UTILS ────────────────────────────────────────────────── */
+const esc = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const spin = id => document.getElementById(id).innerHTML = '<div class="ld"><div class="sp"></div></div>';
+function sy(on, err) { const d = document.getElementById('sync'); d.className = 'sync' + (err ? ' bad' : on ? ' busy' : ''); }
+let tt;
+function toast(m, e) { clearTimeout(tt); const t = document.getElementById('toast'); t.textContent = m; t.className = 'toast on' + (e ? ' e' : ''); tt = setTimeout(() => t.className = 'toast', 2800); }
+function conf(title, msg, cb) {
+  document.getElementById('conf-title').textContent = title;
+  document.getElementById('conf-msg').textContent = msg;
+  document.getElementById('conf-yes').onclick = () => { closeConf(); cb(); };
+  document.getElementById('confirm').classList.add('on');
+}
+function closeConf() { document.getElementById('confirm').classList.remove('on'); }
+function openModal(id) { document.getElementById(id).classList.add('on'); }
+function closeModal(id) { document.getElementById(id).classList.remove('on'); }
+
+/* ── INIT ─────────────────────────────────────────────────── */
+async function initApp() {
+  sy(true);
+  await Promise.all([loadMenu(), loadEvents(), loadAnn(), loadHours(), loadTickets(), loadOrders()]);
+  sy(false);
+}
+
+/* ══ MENU ══════════════════════════════════════════════════ */
+async function loadMenu() {
+  spin('menu-list');
+  const { data, error } = await sb.from('menu_items').select('*').order('category').order('sort_order');
+  if (error) { toast('Failed to load menu', true); sy(false, true); return; }
+  const el = document.getElementById('menu-list');
+  if (!data || !data.length) { el.innerHTML = '<div class="empty"><div class="ei">🍽️</div><div class="et">No menu items</div><div class="es">Tap Add Item to start</div></div>'; return; }
+  const g = {};
+  data.forEach(i => { const c = i.category || 'other'; if (!g[c]) g[c] = []; g[c].push(i); });
+  el.innerHTML = Object.entries(g).map(([cat, items]) => `
+    <div style="margin-bottom:20px;">
+      <div class="ey" style="margin-bottom:9px;">${esc(CATS[cat] || cat)}</div>
+      ${items.map(item => `
+        <div class="card">
+          ${item.image_url ? `<img src="${esc(item.image_url)}" style="width:100%;height:120px;object-fit:cover;border-radius:10px;margin-bottom:11px;" onerror="this.style.display='none'">` : ''}
+          <div class="cn">${esc(item.name)}</div>
+          <div class="cp">R${Number(item.price).toFixed(0)}</div>
+          ${item.description ? `<p style="font-size:12px;color:var(--s3);margin:5px 0;line-height:1.4;">${esc(item.description)}</p>` : ''}
+          <span class="badge ${item.available ? 'b-ok' : 'b-err'}">${item.available ? '✓ Available' : '✗ Sold Out'}</span>
+          <div class="ca">
+            <button class="ab ab-e" onclick="openMenuModal('${item.id}')">
+              <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
+            </button>
+            <button class="ab" onclick="toggleAvail('${item.id}',${item.available})"
+              style="color:${item.available ? 'var(--warn)' : 'var(--ok)'};border-color:${item.available ? 'rgba(245,166,35,.3)' : 'rgba(76,175,80,.3)'}">
+              ${item.available ? 'Sold Out' : 'Available'}
+            </button>
+            <button class="ab ab-d" onclick="delItem('${item.id}')">
+              <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M9 6V4h6v2"/></svg>Del
+            </button>
+          </div>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+async function toggleAvail(id, cur) {
+  sy(true);
+  const { error } = await sb.from('menu_items').update({ available: !cur, updated_at: new Date().toISOString() }).eq('id', id);
+  sy(false, !!error);
+  if (error) { toast('Update failed', true); return; }
+  toast(!cur ? 'Marked available ✓' : 'Marked sold out ✓'); loadMenu();
+}
+
+async function delItem(id) {
+  conf('Delete Item', 'Permanently removes item from menu and live site.', async () => {
+    sy(true); const { error } = await sb.from('menu_items').delete().eq('id', id); sy(false, !!error);
+    if (error) { toast('Failed', true); return; } toast('Item deleted'); loadMenu();
+  });
+}
+
+function openMenuModal(id) {
+  document.getElementById('mm-title').textContent = id ? 'Edit Item' : 'New Menu Item';
+  document.getElementById('mi-id').value = id || '';
+  if (!id) {
+    ['mi-name', 'mi-desc', 'mi-photo', 'mi-price', 'mi-order'].forEach(f => document.getElementById(f).value = '');
+    document.getElementById('mi-cat').value = 'kota';
+    document.getElementById('mi-avail').checked = true;
+    openModal('menu-modal'); return;
+  }
+  sb.from('menu_items').select('*').eq('id', id).single().then(({ data }) => {
+    if (!data) { toast('Load failed', true); return; }
+    document.getElementById('mi-name').value = data.name || '';
+    document.getElementById('mi-desc').value = data.description || '';
+    document.getElementById('mi-price').value = data.price || '';
+    document.getElementById('mi-cat').value = data.category || 'kota';
+    document.getElementById('mi-photo').value = data.image_url || '';
+    document.getElementById('mi-order').value = data.sort_order || 0;
+    document.getElementById('mi-avail').checked = data.available !== false;
+    openModal('menu-modal');
+  });
+}
+
+async function saveMenuItem() {
+  const name = document.getElementById('mi-name').value.trim();
+  if (!name) { toast('Please enter a name'); return; }
+  const btn = document.getElementById('mi-save'); btn.disabled = true; btn.textContent = 'Saving...';
+  const id = document.getElementById('mi-id').value;
+  const p = { name, description: document.getElementById('mi-desc').value.trim() || '', price: parseFloat(document.getElementById('mi-price').value) || 0, category: document.getElementById('mi-cat').value, image_url: document.getElementById('mi-photo').value.trim() || '', sort_order: parseInt(document.getElementById('mi-order').value) || 0, available: document.getElementById('mi-avail').checked, updated_at: new Date().toISOString() };
+  sy(true);
+  const { error } = id ? await sb.from('menu_items').update(p).eq('id', id) : await sb.from('menu_items').insert(p);
+  sy(false, !!error); btn.disabled = false; btn.textContent = 'Save Item';
+  if (error) { toast('Save failed: ' + error.message, true); return; }
+  closeModal('menu-modal'); toast(id ? 'Item updated ✓' : 'Item added ✓'); loadMenu();
+}
+
+/* ══ EVENTS ════════════════════════════════════════════════ */
+async function loadEvents() {
+  spin('events-list');
+  const { data, error } = await sb.from('events').select('*').order('created_at', { ascending: false });
+  if (error) { toast('Failed to load events', true); return; }
+  const el = document.getElementById('events-list');
+  if (!data || !data.length) { el.innerHTML = '<div class="empty"><div class="ei">🎉</div><div class="et">No events yet</div><div class="es">Tap Add Event to start</div></div>'; return; }
+  el.innerHTML = data.map(ev => {
+    const tix = Array.isArray(ev.tickets) ? ev.tickets : [];
+    const ds = ev.event_date ? new Date(ev.event_date + 'T00:00:00').toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' }) : (ev.recurring_day || 'TBC');
+    return `<div class="card">
+      ${ev.image_url ? `<img src="${esc(ev.image_url)}" style="width:100%;height:140px;object-fit:cover;border-radius:10px;margin-bottom:11px;" onerror="this.style.display='none'">` : ''}
+      <div class="cn">${esc(ev.name)}</div>
+      <div class="cm">${esc(ds)}${ev.start_time ? ' · ' + String(ev.start_time).slice(0, 5) : ''}</div>
+      <div>
+        <span class="badge ${ev.is_recurring ? 'b-rc' : 'b-sp'}">${ev.is_recurring ? '🔁 Recurring' : '⚡ Special'}</span>
+        <span class="badge ${ev.sold_out ? 'b-err' : 'b-ok'}">${ev.sold_out ? 'Sold Out' : 'Available'}</span>
+        ${!ev.active ? '<span class="badge b-hid">Hidden</span>' : ''}
+      </div>
+      ${ev.description ? `<p style="font-size:12px;color:var(--s3);margin:9px 0 0;line-height:1.5;">${esc(ev.description)}</p>` : ''}
+      ${tix.length ? `<div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:11px;">${tix.map(t => `<div style="background:var(--n3);border:1px solid var(--gbr);border-radius:9px;padding:7px 11px;"><div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--s3);">${esc(t.label)}</div><div style="font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:700;color:var(--eg);">${t.free ? 'FREE' : 'R' + t.price}</div></div>`).join('')}</div>` : ''}
+      <div class="ca">
+        <button class="ab ab-e" onclick="openEventModal('${ev.id}')">
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit
+        </button>
+        <button class="ab" onclick="toggleSold('${ev.id}',${ev.sold_out})"
+          style="color:${ev.sold_out ? 'var(--ok)' : 'var(--warn)'};border-color:${ev.sold_out ? 'rgba(76,175,80,.3)' : 'rgba(245,166,35,.3)'}">
+          ${ev.sold_out ? 'Mark Available' : 'Mark Sold Out'}
+        </button>
+        <button class="ab ab-d" onclick="delEvent('${ev.id}')">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M9 6V4h6v2"/></svg>Del
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function toggleSold(id, cur) {
+  sy(true); const { error } = await sb.from('events').update({ sold_out: !cur, updated_at: new Date().toISOString() }).eq('id', id); sy(false, !!error);
+  if (error) { toast('Update failed', true); return; } toast(!cur ? 'Marked sold out ✓' : 'Marked available ✓'); loadEvents(); loadTickets();
+}
+
+async function delEvent(id) {
+  conf('Delete Event', 'Permanently removes event from live site.', async () => {
+    sy(true); const { error } = await sb.from('events').delete().eq('id', id); sy(false, !!error);
+    if (error) { toast('Failed', true); return; } toast('Event deleted'); loadEvents(); loadTickets();
+  });
+}
+
+function addTicket(data) {
+  ttc++; const el = document.createElement('div'); el.className = 'ti'; el.id = 'tt' + ttc;
+  el.innerHTML = `<button class="tirm" onclick="document.getElementById('tt${ttc}').remove()">×</button>
+    <div class="tig">
+      <div class="fg"><label class="fl">Label</label><input type="text" class="ttl" placeholder="e.g. General" value="${esc((data && data.label) || '')}"></div>
+      <div class="fg"><label class="fl">Price (R)</label><input type="number" class="ttp" placeholder="0" min="0" value="${(data && !data.free) ? data.price : ''}"></div>
+    </div>`;
+  document.getElementById('ticket-builder').appendChild(el);
+}
+
+function getTix() { return Array.from(document.querySelectorAll('.ti')).map(el => ({ label: el.querySelector('.ttl').value.trim(), price: parseFloat(el.querySelector('.ttp').value) || 0, free: false })).filter(t => t.label); }
+
+function openEventModal(id) {
+  document.getElementById('em-title').textContent = id ? 'Edit Event' : 'New Event';
+  document.getElementById('ei-id').value = id || '';
+  document.getElementById('ticket-builder').innerHTML = ''; ttc = 0;
+  if (!id) {
+    ['ei-name', 'ei-sub', 'ei-desc', 'ei-poster', 'ei-date', 'ei-time', 'ei-total'].forEach(f => document.getElementById(f).value = '');
+    document.getElementById('ei-type').value = 'false'; document.getElementById('ei-rday').value = '';
+    document.getElementById('ei-sold').value = 'false'; document.getElementById('ei-active').checked = true;
+    openModal('event-modal'); return;
+  }
+  sb.from('events').select('*').eq('id', id).single().then(({ data }) => {
+    if (!data) { toast('Load failed', true); return; }
+    document.getElementById('ei-name').value = data.name || '';
+    document.getElementById('ei-sub').value = data.subtitle || '';
+    document.getElementById('ei-desc').value = data.description || '';
+    document.getElementById('ei-poster').value = data.image_url || '';
+    document.getElementById('ei-date').value = data.event_date || '';
+    document.getElementById('ei-time').value = data.start_time ? String(data.start_time).slice(0, 5) : '';
+    document.getElementById('ei-type').value = String(data.is_recurring);
+    document.getElementById('ei-rday').value = data.recurring_day || '';
+    document.getElementById('ei-total').value = data.total_tickets || 0;
+    document.getElementById('ei-sold').value = String(data.sold_out);
+    document.getElementById('ei-active').checked = data.active !== false;
+    if (Array.isArray(data.tickets)) data.tickets.forEach(t => addTicket(t));
+    openModal('event-modal');
+  });
+}
+
+async function saveEvent() {
+  const name = document.getElementById('ei-name').value.trim();
+  if (!name) { toast('Please enter event name'); return; }
+  const btn = document.getElementById('ei-save'); btn.disabled = true; btn.textContent = 'Saving...';
+  const id = document.getElementById('ei-id').value;
+  const p = { name, subtitle: document.getElementById('ei-sub').value.trim() || '', description: document.getElementById('ei-desc').value.trim() || '', image_url: document.getElementById('ei-poster').value.trim() || '', event_date: document.getElementById('ei-date').value || null, start_time: document.getElementById('ei-time').value || null, is_recurring: document.getElementById('ei-type').value === 'true', recurring_day: document.getElementById('ei-rday').value || '', total_tickets: parseInt(document.getElementById('ei-total').value) || 0, sold_out: document.getElementById('ei-sold').value === 'true', active: document.getElementById('ei-active').checked, tickets: getTix(), updated_at: new Date().toISOString() };
+  sy(true);
+  const { error } = id ? await sb.from('events').update(p).eq('id', id) : await sb.from('events').insert({ ...p, sold_tickets: 0 });
+  sy(false, !!error); btn.disabled = false; btn.textContent = 'Save Event';
+  if (error) { toast('Save failed: ' + error.message, true); return; }
+  closeModal('event-modal'); toast(id ? 'Event updated ✓' : 'Event added ✓'); loadEvents(); loadTickets();
+}
+
+/* ══ BANNER ════════════════════════════════════════════════ */
+async function loadAnn() {
+  const { data } = await sb.from('announcements').select('*').order('created_at', { ascending: false });
+  const active = data ? data.find(a => a.active) : null;
+  annId = active ? active.id : null;
+  document.getElementById('ann-tog').checked = !!active;
+  document.getElementById('ann-msg').value = active ? active.message : '';
+  updateAnnPrev();
+  const hist = document.getElementById('ann-hist');
+  const old = (data || []).filter(a => !a.active);
+  hist.innerHTML = old.length ? '<div class="ey" style="margin-bottom:9px;">Past Banners</div>' + old.map(a => `
+    <div class="card" style="padding:13px;">
+      <p style="font-size:13px;color:var(--s3);margin-bottom:9px;">${esc(a.message)}</p>
+      <button onclick="reactivateAnn('${a.id}')" style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;color:var(--eg);padding:5px 11px;border-radius:7px;border:1px solid rgba(242,100,25,.3);background:none;cursor:pointer;letter-spacing:1px;text-transform:uppercase;margin-right:6px;">Reactivate</button>
+      <button onclick="delAnn('${a.id}')" style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;color:var(--err);padding:5px 11px;border-radius:7px;border:1px solid rgba(255,68,68,.25);background:none;cursor:pointer;letter-spacing:1px;text-transform:uppercase;">Delete</button>
+    </div>`).join('') : '';
+}
+
+function updateAnnPrev() {
+  const m = document.getElementById('ann-msg').value.trim();
+  document.getElementById('ann-prev-txt').textContent = m;
+  document.getElementById('ann-prev').classList.toggle('on', !!m);
+}
+
+async function saveAnn() {
+  const message = document.getElementById('ann-msg').value.trim();
+  const active = document.getElementById('ann-tog').checked;
+  sy(true);
+  await sb.from('announcements').update({ active: false }).neq('id', '00000000-0000-0000-0000-000000000000');
+  if (message) { if (annId) await sb.from('announcements').update({ message, active }).eq('id', annId); else await sb.from('announcements').insert({ message, active }); }
+  sy(false); toast(active && message ? 'Banner is live ✓' : 'Banner saved'); loadAnn();
+}
+async function reactivateAnn(id) { sy(true); await sb.from('announcements').update({ active: false }).neq('id', id); await sb.from('announcements').update({ active: true }).eq('id', id); sy(false); toast('Reactivated ✓'); loadAnn(); }
+async function delAnn(id) { sy(true); await sb.from('announcements').delete().eq('id', id); sy(false); loadAnn(); }
+
+/* ══ HOURS ═════════════════════════════════════════════════ */
+async function loadHours() {
+  const { data, error } = await sb.from('trading_hours').select('*').order('day_order');
+  if (error) { toast('Failed to load hours', true); return; }
+  hData = data || [];
+  document.getElementById('hours-table').innerHTML = hData.map(h => `
+    <div class="hd">
+      <div class="hn">${esc(h.day_name)}</div>
+      <div class="hi" id="hi-${h.id}" style="${h.is_closed ? 'opacity:.4;pointer-events:none;' : ''}">
+        <input type="time" id="ho-${h.id}" value="${(h.open_time || '').slice(0, 5)}" style="width:94px;">
+        <span style="color:var(--s3);font-size:11px;">to</span>
+        <input type="time" id="hc-${h.id}" value="${(h.close_time || '').slice(0, 5)}" style="width:94px;">
+      </div>
+      ${h.is_closed ? '<span style="font-family:Montserrat,sans-serif;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--err);padding:4px 9px;background:rgba(255,68,68,.1);border:1px solid rgba(255,68,68,.2);border-radius:5px;">Closed</span>' : '<span style="width:52px;display:inline-block;"></span>'}
+      <label class="tog" style="margin-left:auto;">
+        <input type="checkbox" id="hx-${h.id}" ${h.is_closed ? 'checked' : ''} onchange="onClosed('${h.id}',this.checked)">
+        <div class="tog-t"></div>
+      </label>
+    </div>`).join('');
+}
+
+function onClosed(id, closed) { const el = document.getElementById('hi-' + id); el.style.opacity = closed ? '.4' : '1'; el.style.pointerEvents = closed ? 'none' : 'auto'; }
+
+async function saveHours() {
+  sy(true);
+  const res = await Promise.all(hData.map(h => sb.from('trading_hours').update({ open_time: document.getElementById('ho-' + h.id)?.value || null, close_time: document.getElementById('hc-' + h.id)?.value || null, is_closed: document.getElementById('hx-' + h.id)?.checked || false }).eq('id', h.id)));
+  const fail = res.some(r => r.error); sy(false, fail);
+  if (fail) { toast('Some failed to save', true); return; } toast('Trading hours saved ✓'); loadHours();
+}
+
+/* ══ TICKETS ═══════════════════════════════════════════════ */
+async function loadTickets() {
+  spin('tickets-list');
+  const { data, error } = await sb.from('events').select('id,name,event_date,start_time,recurring_day,tickets,total_tickets,sold_tickets,sold_out').order('created_at', { ascending: false });
+  if (error) { toast('Failed', true); return; }
+  const withT = (data || []).filter(ev => ev.total_tickets > 0 || (Array.isArray(ev.tickets) && ev.tickets.length > 0));
+  const el = document.getElementById('tickets-list');
+  if (!withT.length) { el.innerHTML = '<div class="empty"><div class="ei">🎟️</div><div class="et">No ticketed events</div><div class="es">Add events with ticket types to manage here</div></div>'; return; }
+  el.innerHTML = withT.map(ev => {
+    const sold = ev.sold_tickets || 0, total = ev.total_tickets || 0, rem = total - sold;
+    const pct = total > 0 ? (sold / total) * 100 : 0;
+    const bc = pct >= 90 ? 'var(--err)' : pct >= 70 ? 'var(--warn)' : 'var(--eg)';
+    const ds = ev.event_date ? new Date(ev.event_date + 'T00:00:00').toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' }) : (ev.recurring_day || 'TBC');
+    const tix = Array.isArray(ev.tickets) ? ev.tickets : [];
+    return `<div class="tc">
+      <div class="ten">${esc(ev.name)}</div>
+      <div class="tes">${esc(ds)}${ev.start_time ? ' · ' + String(ev.start_time).slice(0, 5) : ''}</div>
+      ${total > 0 ? `<div class="tt">
+        <div class="tth"><div class="ttn">Total Capacity</div><div class="ttp">${total} tickets</div></div>
+        <div class="tbw"><div class="tbl" style="width:${pct}%;background:${bc};"></div></div>
+        <div class="tbs"><span>${sold} sold</span><span>${rem} remaining</span></div>
+        <div class="tov">
+          <input type="number" id="ov-${ev.id}" placeholder="Override sold count" min="0" max="${total}" value="${sold}">
+          <button class="tovb" onclick="applyOv('${ev.id}')">Apply</button>
+        </div>
+      </div>` : ''}
+      ${tix.map(t => `<div class="tt"><div class="tth"><div class="ttn">${esc(t.label)}</div><div class="ttp">${t.free ? 'FREE' : 'R' + t.price}</div></div></div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+async function applyOv(evId) {
+  const val = parseInt(document.getElementById('ov-' + evId)?.value);
+  if (isNaN(val) || val < 0) { toast('Invalid number', true); return; }
+  sy(true); const { error } = await sb.from('events').update({ sold_tickets: val, updated_at: new Date().toISOString() }).eq('id', evId); sy(false, !!error);
+  if (error) { toast('Update failed', true); return; } toast('Updated ✓'); loadTickets();
+}
+
+/* ══ ORDERS ════════════════════════════════════════════════ */
+async function loadOrders() {
+  spin('orders-list');
+  const { data, error } = await sb.from('orders').select('*').order('created_at', { ascending: false }).limit(60);
+  if (error) { toast('Failed to load orders', true); return; }
+  const el = document.getElementById('orders-list');
+  if (!data || !data.length) { el.innerHTML = '<div class="empty"><div class="ei">🧾</div><div class="et">No orders yet</div><div class="es">Orders appear here as customers place them</div></div>'; return; }
+  el.innerHTML = data.map(o => {
+    const items = Array.isArray(o.items) ? o.items : [];
+    const st = o.status || 'pending';
+    return `<div class="oc">
+      <div class="oi">Order #${String(o.id || '').slice(-8).toUpperCase()}</div>
+      <div class="on2">${esc(o.customer_name || 'Customer')}</div>
+      <div class="oa">R${Number(o.amount || 0).toFixed(0)}</div>
+      ${o.customer_phone ? `<div style="font-size:12px;color:var(--s3);margin-top:3px;">📞 ${esc(o.customer_phone)}</div>` : ''}
+      ${o.collect_at ? `<div style="font-size:12px;color:var(--s3);">🕐 ${esc(o.collect_at)}</div>` : ''}
+      ${items.length ? `<div style="margin-top:9px;padding-top:9px;border-top:1px solid var(--gbr);">${items.map(i => `<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--s3);padding:2px 0;">${esc(i.name || '')} ×${i.qty || 1}<span style="color:var(--eg);">R${(i.price || 0) * (i.qty || 1)}</span></div>`).join('')}</div>` : ''}
+      ${o.instructions ? `<div style="font-size:12px;color:var(--s3);margin-top:7px;padding:7px;background:var(--n3);border-radius:7px;">📝 ${esc(o.instructions)}</div>` : ''}
+      <div><span class="osb s-${st}">${st}</span></div>
+      ${st === 'paid' ? `<button class="cob" onclick="collectOrder('${o.id}')">✓ Mark as Collected</button>` : ''}
+    </div>`;
+  }).join('');
+}
+
+async function collectOrder(id) {
+  sy(true); const { error } = await sb.from('orders').update({ status: 'collected', is_collected: true, collected_at: new Date().toISOString() }).eq('id', id); sy(false, !!error);
+  if (error) { toast('Update failed', true); return; } toast('Marked as collected ✓'); loadOrders();
+}
+
+async function clearCollected() {
+  await sb.from('orders').select('*').neq('status', 'collected').order('created_at', { ascending: false }).limit(60);
+  loadOrders();
+  toast('Collected orders hidden');
+}
+</script>
+</body>
+</html>
